@@ -32,6 +32,8 @@ namespace KafkaTopicExtractor.Commands
 
             try
             {
+                var eventNumber = 0;
+                var totalEventsToRead = cfg.EventsToRead; // 0 - infinite
                 while (!cancellationToken.IsCancellationRequested)
                 {
                     var consumeResult = topicConsumer.Consume(cancellationToken);
@@ -39,12 +41,23 @@ namespace KafkaTopicExtractor.Commands
 
                     if (string.IsNullOrWhiteSpace(consumeResult.Message.Value))
                     {
-                        await _console.Error.WriteLineAsync("Value is empty. Reading next one...");
+                        await _console.Error.WriteLineAsync("Value is empty or not read. Reading next one...");
                         continue;
                     }
 
+                    eventNumber++;
+
                     var json = JObject.Parse(consumeResult.Message.Value);
                     await csvFileWriter.WriteAsync(cancellationToken, json);
+
+                    if (totalEventsToRead > 0)
+                        await _console.Out.WriteLineAsync($"  written {eventNumber}/{totalEventsToRead}");
+                    else
+                        await _console.Out.WriteLineAsync($"  written {eventNumber}");
+
+                    // check if we need to stop reading events
+                    if (totalEventsToRead > 0 && eventNumber == totalEventsToRead)
+                        break;
                 }
             }
             finally

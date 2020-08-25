@@ -13,8 +13,14 @@ namespace KafkaTopicExtractor.Tests.Csv
 {
     public class CsvFileIoTests : IDisposable
     {
-        private readonly string _sampleJsonFile = Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, ".\\sample.json"));
         private readonly FileInfo _fileInfo = new FileInfo(Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, ".\\sample.csv")));
+        private readonly string _sampleJsonFile = Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, ".\\sample.json"));
+
+        /// <inheritdoc />
+        public void Dispose()
+        {
+            File.Delete(_fileInfo.FullName);
+        }
 
         [Fact]
         public async Task When_mapping_empty_should_write_full_flatten_json_to_csv()
@@ -34,7 +40,7 @@ namespace KafkaTopicExtractor.Tests.Csv
             var csvLines = await File.ReadAllLinesAsync(_fileInfo.FullName);
             csvLines.Should().BeEquivalentTo(expected);
         }
-        
+
         [Fact]
         public async Task When_mapping_single_field_should_write_single_field_to_csv()
         {
@@ -44,7 +50,7 @@ namespace KafkaTopicExtractor.Tests.Csv
                 "3"
             };
             var mapping = new TopicMappingConfiguration();
-            mapping.Mapping.Add("Attributes[1].Value[0].Length","Attributes[1].Value[0].Length");
+            mapping.Mapping.Add("Attributes[1].Value[0].Length", "Attributes[1].Value[0].Length");
             using (var csvFileIo = new CsvFileIo(_fileInfo, mapping, PhysicalConsole.Singleton))
             {
                 var json = JObject.Parse(await File.ReadAllTextAsync(_sampleJsonFile));
@@ -54,7 +60,7 @@ namespace KafkaTopicExtractor.Tests.Csv
             var csvLines = await File.ReadAllLinesAsync(_fileInfo.FullName);
             csvLines.Should().BeEquivalentTo(expected);
         }
-        
+
         [Fact]
         public async Task When_mapping_renamed_field_should_write_original_field_value_to_csv()
         {
@@ -64,7 +70,7 @@ namespace KafkaTopicExtractor.Tests.Csv
                 "3"
             };
             var mapping = new TopicMappingConfiguration();
-            mapping.Mapping.Add("Mapped_Length","Attributes[1].Value[0].Length");
+            mapping.Mapping.Add("Mapped_Length", "Attributes[1].Value[0].Length");
             using (var csvFileIo = new CsvFileIo(_fileInfo, mapping, PhysicalConsole.Singleton))
             {
                 var json = JObject.Parse(await File.ReadAllTextAsync(_sampleJsonFile));
@@ -73,12 +79,6 @@ namespace KafkaTopicExtractor.Tests.Csv
 
             var csvLines = await File.ReadAllLinesAsync(_fileInfo.FullName);
             csvLines.Should().BeEquivalentTo(expected);
-        }
-
-        /// <inheritdoc />
-        public void Dispose()
-        {
-            File.Delete(_fileInfo.FullName);
         }
     }
 }
