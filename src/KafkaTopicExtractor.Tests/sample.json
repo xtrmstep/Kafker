@@ -1,0 +1,19 @@
+﻿{
+  "Name": "Fish",
+  "Color": "Silver",
+  "Attributes": [
+    {
+      "Name": "Environment",
+      "Value": "Aquatic"
+    },
+    {
+      "Name": "Parts",
+      "Value": [
+        {
+          "Type": "fin",
+          "Length": 3
+        }
+      ]
+    }
+  ]
+}
