@@ -31,7 +31,7 @@ namespace KafkaTopicExtractor.Tests.Csv
                 "Fish;Silver;Environment;Aquatic;Parts;fin;3"
             };
             var emptyMapping = new TopicMappingConfiguration();
-            using (var csvFileIo = new CsvFileIo(_fileInfo, emptyMapping, PhysicalConsole.Singleton))
+            using (var csvFileIo = new CsvFileWriter(_fileInfo, emptyMapping, PhysicalConsole.Singleton))
             {
                 var json = JObject.Parse(await File.ReadAllTextAsync(_sampleJsonFile));
                 await csvFileIo.WriteAsync(CancellationToken.None, json);
@@ -51,7 +51,7 @@ namespace KafkaTopicExtractor.Tests.Csv
             };
             var mapping = new TopicMappingConfiguration();
             mapping.Mapping.Add("Attributes[1].Value[0].Length", "Attributes[1].Value[0].Length");
-            using (var csvFileIo = new CsvFileIo(_fileInfo, mapping, PhysicalConsole.Singleton))
+            using (var csvFileIo = new CsvFileWriter(_fileInfo, mapping, PhysicalConsole.Singleton))
             {
                 var json = JObject.Parse(await File.ReadAllTextAsync(_sampleJsonFile));
                 await csvFileIo.WriteAsync(CancellationToken.None, json);
@@ -71,7 +71,7 @@ namespace KafkaTopicExtractor.Tests.Csv
             };
             var mapping = new TopicMappingConfiguration();
             mapping.Mapping.Add("Mapped_Length", "Attributes[1].Value[0].Length");
-            using (var csvFileIo = new CsvFileIo(_fileInfo, mapping, PhysicalConsole.Singleton))
+            using (var csvFileIo = new CsvFileWriter(_fileInfo, mapping, PhysicalConsole.Singleton))
             {
                 var json = JObject.Parse(await File.ReadAllTextAsync(_sampleJsonFile));
                 await csvFileIo.WriteAsync(CancellationToken.None, json);

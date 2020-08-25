@@ -37,6 +37,8 @@ namespace KafkaTopicExtractor
 
             app.Command("extract", p =>
             {
+                p.Description = "Extract a topic to CSV file using existing configuration";
+                
                 var topicArg = p.Option("-t|--topic <TOPIC>", "File name with topic configuration", CommandOptionType.SingleValue).IsRequired();
                 var mapArg = p.Option("-m|--map <MAP>", "File name of a file with mapping configuration", CommandOptionType.SingleValue);
 
@@ -49,6 +51,8 @@ namespace KafkaTopicExtractor
 
             app.Command("create-template", p =>
             {
+                p.Description = "Create template CFG and MAP files";
+                
                 var nameArg = p.Option("-n|--name <NAME>", "Template name", CommandOptionType.SingleValue);
 
                 p.OnExecuteAsync(async cancellationToken =>
@@ -60,10 +64,25 @@ namespace KafkaTopicExtractor
             
             app.Command("list", p =>
             {
+                p.Description = "List existing configurations";
                 p.OnExecuteAsync(async cancellationToken =>
                 {
                     var listCommand = services.GetService<IListCommand>();
                     return await listCommand.InvokeAsync();
+                });
+            });
+            
+            app.Command("emit", p =>
+            {
+                p.Description = "Emit events to a topic using existing configuration";
+                
+                var topicArg = p.Option("-t|--topic <TOPIC>", "Topic name to which events should be emitted", CommandOptionType.SingleValue);
+                var fileName = p.Option("<FILE>", "CSV file name with events", CommandOptionType.SingleValue).IsRequired();
+
+                p.OnExecuteAsync(async cancellationToken =>
+                {
+                    var emitCommand = services.GetService<IEmitCommand>();
+                    return await emitCommand.InvokeAsync(cancellationToken, topicArg.Value(), fileName.Value());
                 });
             });
 

@@ -26,7 +26,7 @@ namespace KafkaTopicExtractor.Commands
             var cfg = await ExtractorHelper.ReadConfigurationAsync(topic, _settings, _console);
             var mapping = await ExtractorHelper.ReadMappingConfigurationAsync(map ?? topic, _settings, _console);
 
-            var topicConsumer = ExtractorHelper.CreateKafkaTopicConsumer(cfg, _console);
+            using var topicConsumer = ExtractorHelper.CreateKafkaTopicConsumer(cfg, _console);
             var destinationCsvFile = ExtractorHelper.GetDestinationCsvFilename(topic, _settings, _fileTagProvider);
             var csvFileWriter = ExtractorHelper.CreateCsvFileWriter(destinationCsvFile, mapping, _console);
 

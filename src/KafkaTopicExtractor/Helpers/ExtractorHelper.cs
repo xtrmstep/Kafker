@@ -14,7 +14,7 @@ namespace KafkaTopicExtractor.Helpers
     {
         public static async Task<KafkaTopicConfiguration> ReadConfigurationAsync(string topic, KafkaTopicExtractorSettings setting, IConsole console)
         {
-            var path = Path.Combine(setting.ConfigurationFolder, $"{topic}.cfg");
+            var path = Path.Combine(setting.ConfigurationFolder, $"{topic}.config");
             if (!File.Exists(path))
             {
                 await console.Error.WriteLineAsync($"Cannot read the configuration file: {path}");
@@ -47,7 +47,7 @@ namespace KafkaTopicExtractor.Helpers
             var dt = DateTimeOffset.Now;
             var consumerGroupTag = $"{dt:yyyyMMdd}_{dt:hhmmss}";
 
-            var conf = new ConsumerConfig
+            var consumerConfig = new ConsumerConfig
             {
                 BootstrapServers = string.Join(',', config.Brokers),
                 GroupId = $"kafka_topic_extractor_{consumerGroupTag}",
@@ -57,13 +57,13 @@ namespace KafkaTopicExtractor.Helpers
                 AutoOffsetReset = config.OffsetKind == OffsetKind.Earliest ? AutoOffsetReset.Earliest : AutoOffsetReset.Latest,
                 EnablePartitionEof = true
             };
-            var consumerBuilder = new ConsumerBuilder<Ignore, string>(conf);
+            var consumerBuilder = new ConsumerBuilder<Ignore, string>(consumerConfig);
             var consumer = consumerBuilder.Build();
             consumer.Subscribe(config.Topic);
 
-            console.WriteLine($"Created a consumer: {conf.GroupId}");
-            console.WriteLine($"    brokers: {conf.BootstrapServers}");
-            console.WriteLine($"    autoOffsetReset: {conf.AutoOffsetReset}");
+            console.WriteLine($"Created a consumer: {consumerConfig.GroupId}");
+            console.WriteLine($"    brokers: {consumerConfig.BootstrapServers}");
+            console.WriteLine($"    autoOffsetReset: {consumerConfig.AutoOffsetReset}");
             console.WriteLine($"    topic: {config.Topic}");
 
             return consumer;
@@ -90,7 +90,34 @@ namespace KafkaTopicExtractor.Helpers
 
         public static ICsvFileWriter CreateCsvFileWriter(FileInfo destinationCsvFile, TopicMappingConfiguration mapping, IConsole console)
         {
-            return new CsvFileIo(destinationCsvFile, mapping, console);
+            return new CsvFileWriter(destinationCsvFile, mapping, console);
+        }
+
+        public static ICsvFileReader CreateCsvFileReader(FileInfo sourceCsvFile, TopicMappingConfiguration mapping, IConsole console)
+        {
+            return new CsvFileReader(sourceCsvFile, mapping, console);
+        }
+
+        public static IProducer<Ignore, string> CreateKafkaTopicProducer(KafkaTopicConfiguration config, IConsole console)
+        {
+            var producerConfig = new ProducerConfig
+            {
+                BootstrapServers = string.Join(',', config.Brokers)
+            };
+            var producerBuilder = new ProducerBuilder<Ignore, string>(producerConfig);
+            var producer = producerBuilder.Build();
+            
+            console.WriteLine($"Created a producer:");
+            console.WriteLine($"    brokers: {producerConfig.BootstrapServers}");
+            console.WriteLine($"    topic: {config.Topic}");
+            
+            return producer;
+        }
+
+        public static async Task ProduceAsync(IProducer<Ignore,string> producer, KafkaTopicConfiguration cfg, JObject json)
+        {
+            var message = new Message<Ignore, string> {Value = json.ToString(Formatting.None)};
+            await producer.ProduceAsync(cfg.Topic, message);
         }
     }
 }
