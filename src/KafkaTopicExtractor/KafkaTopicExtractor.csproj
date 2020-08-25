@@ -5,6 +5,9 @@
         <TargetFramework>netcoreapp3.1</TargetFramework>
         <RootNamespace>KafkaTopicExtractor</RootNamespace>
         <AssemblyName>kafka-topic-extractor</AssemblyName>
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <Title>kafka-topic-extractor</Title>
+        <Authors>Alexander Goida</Authors>
     </PropertyGroup>
 
     <ItemGroup>
