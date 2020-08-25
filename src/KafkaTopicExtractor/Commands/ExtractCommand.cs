@@ -29,7 +29,7 @@ namespace KafkaTopicExtractor.Commands
             var topicConsumer = ExtractorHelper.CreateKafkaTopicConsumer(cfg, _console);
             var destinationCsvFile = ExtractorHelper.GetDestinationCsvFilename(topic, _settings, _fileTagProvider);
             var csvFileWriter = ExtractorHelper.CreateCsvFileWriter(destinationCsvFile, mapping, _console);
-            
+
             try
             {
                 while (!cancellationToken.IsCancellationRequested)
@@ -51,6 +51,7 @@ namespace KafkaTopicExtractor.Commands
             {
                 ExtractorHelper.Unsubscribe(topicConsumer, _console);
             }
+
             return 1; // ok
         }
     }

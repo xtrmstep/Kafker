@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace KafkaTopicExtractor.Configurations
+﻿namespace KafkaTopicExtractor.Configurations
 {
     public class KafkaTopicConfiguration
     {

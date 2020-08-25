@@ -1,6 +1,5 @@
 ﻿using System;
 using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
 using Confluent.Kafka;
 using KafkaTopicExtractor.Configurations;
@@ -47,7 +46,7 @@ namespace KafkaTopicExtractor.Helpers
         {
             var dt = DateTimeOffset.Now;
             var consumerGroupTag = $"{dt:yyyyMMdd}_{dt:hhmmss}";
-            
+
             var conf = new ConsumerConfig
             {
                 BootstrapServers = string.Join(',', config.Brokers),
@@ -55,7 +54,7 @@ namespace KafkaTopicExtractor.Helpers
                 EnableAutoCommit = true,
                 StatisticsIntervalMs = 5000,
                 SessionTimeoutMs = 6000,
-                AutoOffsetReset = config.OffsetKind == OffsetKind.Earliest ?  AutoOffsetReset.Earliest : AutoOffsetReset.Latest,
+                AutoOffsetReset = config.OffsetKind == OffsetKind.Earliest ? AutoOffsetReset.Earliest : AutoOffsetReset.Latest,
                 EnablePartitionEof = true
             };
             var consumerBuilder = new ConsumerBuilder<Ignore, string>(conf);
@@ -66,8 +65,8 @@ namespace KafkaTopicExtractor.Helpers
             console.Out.WriteLineAsync($"    brokers: {conf.BootstrapServers}");
             console.Out.WriteLineAsync($"    autoOffsetReset: {conf.AutoOffsetReset}");
             console.Out.WriteLineAsync($"    topic: {config.Topic}");
-            
-            return consumer;            
+
+            return consumer;
         }
 
         public static FileInfo GetDestinationCsvFilename(string topic, KafkaTopicExtractorSettings setting, IFileTagProvider fileTagProvider)
@@ -83,10 +82,10 @@ namespace KafkaTopicExtractor.Helpers
             await Task.Yield();
         }
 
-        public static void Unsubscribe(IConsumer<Ignore,string> consumer, IConsole console)
+        public static void Unsubscribe(IConsumer<Ignore, string> consumer, IConsole console)
         {
             consumer.Unsubscribe();
-            console.Out.WriteLineAsync($"Consumer unsubscribed");
+            console.Out.WriteLineAsync("Consumer unsubscribed");
         }
 
         public static ICsvFileWriter CreateCsvFileWriter(FileInfo destinationCsvFile, TopicMappingConfiguration mapping, IConsole console)

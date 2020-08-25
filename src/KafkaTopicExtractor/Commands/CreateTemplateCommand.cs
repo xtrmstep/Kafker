@@ -36,8 +36,8 @@ namespace KafkaTopicExtractor.Commands
             {
                 Mapping = new Dictionary<string, string>
                 {
-                    {"destination_property_name", "Property"}, 
-                    {"destination_property_of_nested_type", "Node.Property"}, 
+                    {"destination_property_name", "Property"},
+                    {"destination_property_of_nested_type", "Node.Property"},
                     {"destination_property_of_array_element", "Node.Array[1]"}
                 }
             };

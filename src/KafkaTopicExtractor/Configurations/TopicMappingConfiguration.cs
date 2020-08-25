@@ -8,9 +8,8 @@ namespace KafkaTopicExtractor.Configurations
     {
         public TopicMappingConfiguration()
         {
-            
         }
-        
+
         public TopicMappingConfiguration(JObject json)
         {
             var dic = json.Flatten();
