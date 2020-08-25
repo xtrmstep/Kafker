@@ -14,7 +14,7 @@ namespace KafkaTopicExtractor.Helpers
     {
         public static async Task<KafkaTopicConfiguration> ReadConfigurationAsync(string topic, KafkaTopicExtractorSettings setting, IConsole console)
         {
-            var path = Path.Combine(setting.ConfigurationFolder, $"{topic}.config");
+            var path = Path.Combine(setting.ConfigurationFolder, $"{topic}.cfg");
             if (!File.Exists(path))
             {
                 await console.Error.WriteLineAsync($"Cannot read the configuration file: {path}");
@@ -77,11 +77,6 @@ namespace KafkaTopicExtractor.Helpers
             return fileInfo;
         }
 
-        public static async Task WriteToCsvAsync(FileInfo destinationFileName, JObject json, TopicMappingConfiguration mapping)
-        {
-            await Task.Yield();
-        }
-
         public static void Unsubscribe(IConsumer<Ignore, string> consumer, IConsole console)
         {
             consumer.Unsubscribe();
@@ -98,13 +93,13 @@ namespace KafkaTopicExtractor.Helpers
             return new CsvFileReader(sourceCsvFile, mapping, console);
         }
 
-        public static IProducer<Ignore, string> CreateKafkaTopicProducer(KafkaTopicConfiguration config, IConsole console)
+        public static IProducer<string, string> CreateKafkaTopicProducer(KafkaTopicConfiguration config, IConsole console)
         {
             var producerConfig = new ProducerConfig
             {
                 BootstrapServers = string.Join(',', config.Brokers)
             };
-            var producerBuilder = new ProducerBuilder<Ignore, string>(producerConfig);
+            var producerBuilder = new ProducerBuilder<string, string>(producerConfig);
             var producer = producerBuilder.Build();
             
             console.WriteLine($"Created a producer:");
@@ -114,9 +109,13 @@ namespace KafkaTopicExtractor.Helpers
             return producer;
         }
 
-        public static async Task ProduceAsync(IProducer<Ignore,string> producer, KafkaTopicConfiguration cfg, JObject json)
+        public static async Task ProduceAsync(IProducer<string,string> producer, KafkaTopicConfiguration cfg, JObject json)
         {
-            var message = new Message<Ignore, string> {Value = json.ToString(Formatting.None)};
+            var message = new Message<string, string>
+            {
+                Key = string.Empty,
+                Value = json.ToString(Formatting.None)
+            };
             await producer.ProduceAsync(cfg.Topic, message);
         }
     }

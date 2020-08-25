@@ -50,7 +50,7 @@ namespace KafkaTopicExtractor.Commands
             var templateObject = new KafkaTopicConfiguration
             {
                 Brokers = new[] {"broker1"},
-                Topic = "topic",
+                Topic = templateName,
                 EventsToRead = 100,
                 OffsetKind = OffsetKind.Latest
             };

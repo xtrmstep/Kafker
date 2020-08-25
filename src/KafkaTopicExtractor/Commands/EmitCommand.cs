@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Confluent.Kafka;
@@ -27,7 +28,8 @@ namespace KafkaTopicExtractor.Commands
             var mapping = await ExtractorHelper.ReadMappingConfigurationAsync(topic, _settings, _console);
 
             using var topicProducer = ExtractorHelper.CreateKafkaTopicProducer(cfg, _console);
-            var csvFileReader = ExtractorHelper.CreateCsvFileReader(new FileInfo(fileName), mapping, _console);
+            var sourceCsvFile = new FileInfo(fileName);
+            var csvFileReader = ExtractorHelper.CreateCsvFileReader(sourceCsvFile, mapping, _console);
 
             var producedEvents = 0;
             try

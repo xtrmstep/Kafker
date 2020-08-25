@@ -22,6 +22,7 @@ namespace KafkaTopicExtractor
                 .AddSingleton<IExtractCommand, ExtractCommand>()
                 .AddSingleton<ICreateTemplateCommand, CreateTemplateCommand>()
                 .AddSingleton<IListCommand, ListCommand>()
+                .AddSingleton<IEmitCommand, EmitCommand>()
                 .AddSingleton(PhysicalConsole.Singleton)
                 .Configure<KafkaTopicExtractorSettings>(configuration.GetSection(nameof(KafkaTopicExtractorSettings)))
                 .BuildServiceProvider();
@@ -76,13 +77,13 @@ namespace KafkaTopicExtractor
             {
                 p.Description = "Emit events to a topic using existing configuration";
                 
-                var topicArg = p.Option("-t|--topic <TOPIC>", "Topic name to which events should be emitted", CommandOptionType.SingleValue);
-                var fileName = p.Option("<FILE>", "CSV file name with events", CommandOptionType.SingleValue).IsRequired();
+                var topicArg = p.Option("-t|--topic <TOPIC>", "Topic name to which events should be emitted", CommandOptionType.SingleValue).IsRequired();
+                var fileName = p.Argument("file", "CSV file name with events").IsRequired();
 
                 p.OnExecuteAsync(async cancellationToken =>
                 {
                     var emitCommand = services.GetService<IEmitCommand>();
-                    return await emitCommand.InvokeAsync(cancellationToken, topicArg.Value(), fileName.Value());
+                    return await emitCommand.InvokeAsync(cancellationToken, topicArg.Value(), fileName.Value);
                 });
             });
 
