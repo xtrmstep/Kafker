@@ -35,6 +35,7 @@ namespace KafkaTopicExtractor.Csv
 
         public void Dispose()
         {
+            _streamWriter.Flush();
             _streamWriter.Close();
             _streamWriter.Dispose();
             _streamWriter = null;
@@ -45,6 +46,7 @@ namespace KafkaTopicExtractor.Csv
             console.WriteLine($"CSV file: {fileInfo.FullName}");
             if (File.Exists(fileInfo.FullName)) console.WriteLine("The file is already exists and will be rewritten");
             _streamWriter = File.CreateText(fileInfo.FullName);
+            _streamWriter.AutoFlush = true;
         }
 
         private void InitMapping(TopicMappingConfiguration mapping)
