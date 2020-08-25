@@ -6,7 +6,6 @@ using FluentAssertions;
 using KafkaTopicExtractor.Configurations;
 using KafkaTopicExtractor.Csv;
 using McMaster.Extensions.CommandLineUtils;
-using Moq;
 using Newtonsoft.Json.Linq;
 using Xunit;
 
@@ -35,7 +34,46 @@ namespace KafkaTopicExtractor.Tests.Csv
             var csvLines = await File.ReadAllLinesAsync(_fileInfo.FullName);
             csvLines.Should().BeEquivalentTo(expected);
         }
+        
+        [Fact]
+        public async Task When_mapping_single_field_should_write_single_field_to_csv()
+        {
+            var expected = new[]
+            {
+                "Attributes[1].Value[0].Length",
+                "3"
+            };
+            var mapping = new TopicMappingConfiguration();
+            mapping.Mapping.Add("Attributes[1].Value[0].Length","Attributes[1].Value[0].Length");
+            using (var csvFileIo = new CsvFileIo(_fileInfo, mapping, PhysicalConsole.Singleton))
+            {
+                var json = JObject.Parse(await File.ReadAllTextAsync(_sampleJsonFile));
+                await csvFileIo.WriteAsync(CancellationToken.None, json);
+            }
 
+            var csvLines = await File.ReadAllLinesAsync(_fileInfo.FullName);
+            csvLines.Should().BeEquivalentTo(expected);
+        }
+        
+        [Fact]
+        public async Task When_mapping_renamed_field_should_write_original_field_value_to_csv()
+        {
+            var expected = new[]
+            {
+                "Mapped_Length",
+                "3"
+            };
+            var mapping = new TopicMappingConfiguration();
+            mapping.Mapping.Add("Mapped_Length","Attributes[1].Value[0].Length");
+            using (var csvFileIo = new CsvFileIo(_fileInfo, mapping, PhysicalConsole.Singleton))
+            {
+                var json = JObject.Parse(await File.ReadAllTextAsync(_sampleJsonFile));
+                await csvFileIo.WriteAsync(CancellationToken.None, json);
+            }
+
+            var csvLines = await File.ReadAllLinesAsync(_fileInfo.FullName);
+            csvLines.Should().BeEquivalentTo(expected);
+        }
 
         /// <inheritdoc />
         public void Dispose()

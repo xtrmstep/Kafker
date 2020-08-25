@@ -61,7 +61,8 @@ namespace KafkaTopicExtractor.Csv
             foreach (var mappingKey in mapping.Keys)
             {
                 var strValue = string.Empty;
-                if (dic.TryGetValue(mappingKey, out var value)) strValue = Convert.ToString(value);
+                var mappedField = mapping[mappingKey];
+                if (dic.TryGetValue(mappedField, out var value)) strValue = Convert.ToString(value);
                 lineDic.Add(mappingKey, strValue);
             }
 
