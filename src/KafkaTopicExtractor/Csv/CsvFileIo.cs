@@ -42,8 +42,8 @@ namespace KafkaTopicExtractor.Csv
 
         private void InitCsvFile(FileSystemInfo fileInfo, IConsole console)
         {
-            console.Out.WriteLine($"CSV file: {fileInfo.FullName}");
-            if (File.Exists(fileInfo.FullName)) console.Out.WriteLine("The file is already exists and will be rewritten");
+            console.WriteLine($"CSV file: {fileInfo.FullName}");
+            if (File.Exists(fileInfo.FullName)) console.WriteLine("The file is already exists and will be rewritten");
             _streamWriter = File.CreateText(fileInfo.FullName);
         }
 

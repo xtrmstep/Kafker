@@ -9,12 +9,12 @@ namespace KafkaTopicExtractor.Tests.Configurations
 {
     public class TopicMappingConfigurationTests
     {
-        private readonly string _filePath = Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, ".\\sample.json"));
+        private readonly string _sampleJsonFile = Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, ".\\sample.json"));
         private readonly JObject _jsonObject;
 
         public TopicMappingConfigurationTests()
         {
-            _jsonObject = JObject.Parse(File.ReadAllText(_filePath));
+            _jsonObject = JObject.Parse(File.ReadAllText(_sampleJsonFile));
         }
         
         [Fact]

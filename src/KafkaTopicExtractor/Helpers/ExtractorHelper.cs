@@ -61,10 +61,10 @@ namespace KafkaTopicExtractor.Helpers
             var consumer = consumerBuilder.Build();
             consumer.Subscribe(config.Topic);
 
-            console.Out.WriteLineAsync($"Created a consumer: {conf.GroupId}");
-            console.Out.WriteLineAsync($"    brokers: {conf.BootstrapServers}");
-            console.Out.WriteLineAsync($"    autoOffsetReset: {conf.AutoOffsetReset}");
-            console.Out.WriteLineAsync($"    topic: {config.Topic}");
+            console.WriteLine($"Created a consumer: {conf.GroupId}");
+            console.WriteLine($"    brokers: {conf.BootstrapServers}");
+            console.WriteLine($"    autoOffsetReset: {conf.AutoOffsetReset}");
+            console.WriteLine($"    topic: {config.Topic}");
 
             return consumer;
         }
@@ -85,7 +85,7 @@ namespace KafkaTopicExtractor.Helpers
         public static void Unsubscribe(IConsumer<Ignore, string> consumer, IConsole console)
         {
             consumer.Unsubscribe();
-            console.Out.WriteLineAsync("Consumer unsubscribed");
+            console.WriteLine("Consumer unsubscribed");
         }
 
         public static ICsvFileWriter CreateCsvFileWriter(FileInfo destinationCsvFile, TopicMappingConfiguration mapping, IConsole console)
