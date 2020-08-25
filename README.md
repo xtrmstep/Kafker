@@ -36,8 +36,15 @@ Any of this arguments can be used in CFG file to set a default value. If CFG fil
 
 Example of CFG file:
 
-```txt
-to be updated
+```json
+{
+  "Brokers": [
+    "localhost:9092"
+  ],
+  "Topic": "my-topic",
+  "EventsToRead": 50,
+  "OffsetKind": "Latest"
+}
 ```  
 
 ### JSON to CSV mapping
@@ -48,6 +55,51 @@ When message is deserialized to JSON, the tool will try to use provided map-file
 
 Example of MAP file:
 
-```txt
-to be updated
+```json
+{
+  "Mapping": {
+    "file_field": "Json.Property[0].Name"
+  }
+}
 ``` 
+
+## Usage Examples
+
+Let's read some topic and send extracted events to another topic. Before using this steps you need to configure `appsetting.json`, specify `ConfigurationFolder` where all configurations will be stored and `Destination` where all CSV files (extracted topics) will stored.  
+
+Create templates
+
+```bash
+./kafka-topic-extractor.exe create-template source-topic
+```
+
+This command will create two files: `source-topic.cfg` and `source-topic.map`. In CFG file you need to specify Kafka broker(s) and exact topic name. Also you may specify number of events to read (`EventsToRead`) and other parameters. In MAP file you may want to specify a mapping. If there is no mapping, then all fields will be extracted. Let's extract all fields.
+
+```json
+{
+  "Mapping": {
+  }
+}
+```
+
+You can check which topic configurations you have:
+
+```bash
+./kafka-topic-extractor.exe list
+```
+
+Now let's extract events from the topic:
+
+```bash
+./kafka-topic-extractor.exe extract -t source-topic
+```
+
+This command will read those two CFG and MAP files, read certain number of events (press Ctrl+C to break the operation earlier if you need). When it's finished in the destination folder (defined in the `appsetting.json`) you'll find a CSV file. The name of the file will have topic's name and timestamp in its name (e.g., `source-topic_20200825_054112.csv`).
+
+Now let's send this file to another topic. You need to create a new template and update it with new information. If you're not specifying the mapping, JSON field in th Kafka event will be called same as in the file. The following command will read lines from file and emit them to Kafka topic.
+
+```bash
+./kafka-topic-extractor.exe emit -t destination-topic c://csv_files/source-topic_20200825_054112.csv
+``` 
+
+That's it.
