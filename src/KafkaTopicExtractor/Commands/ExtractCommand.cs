@@ -30,13 +30,16 @@ namespace KafkaTopicExtractor.Commands
             var destinationCsvFile = ExtractorHelper.GetDestinationCsvFilename(topic, _settings, _fileTagProvider);
             var csvFileWriter = ExtractorHelper.CreateCsvFileWriter(destinationCsvFile, mapping, _console);
 
+            var consumedEventsInTotal = 0;
             try
             {
                 var eventNumber = 0;
                 var totalEventsToRead = cfg.EventsToRead; // 0 - infinite
+                consumedEventsInTotal = 0;
                 while (!cancellationToken.IsCancellationRequested)
                 {
                     var consumeResult = topicConsumer.Consume(cancellationToken);
+                    consumedEventsInTotal++;
                     if (consumeResult.IsPartitionEOF) continue;
 
                     if (string.IsNullOrWhiteSpace(consumeResult.Message.Value))
@@ -51,9 +54,10 @@ namespace KafkaTopicExtractor.Commands
                     await csvFileWriter.WriteAsync(cancellationToken, json);
 
                     if (totalEventsToRead > 0)
-                        await _console.Out.WriteLineAsync($"  written {eventNumber}/{totalEventsToRead}");
+                        await _console.Out.WriteLineAsync($"  processed {eventNumber}/{totalEventsToRead}");
                     else
-                        await _console.Out.WriteLineAsync($"  written {eventNumber}");
+                        await _console.Out.WriteLineAsync($"  processed {eventNumber}");
+                    await Task.Delay(5, cancellationToken);
 
                     // check if we need to stop reading events
                     if (totalEventsToRead > 0 && eventNumber == totalEventsToRead)
@@ -62,6 +66,7 @@ namespace KafkaTopicExtractor.Commands
             }
             finally
             {
+                await _console.Out.WriteLineAsync($"Consumed {consumedEventsInTotal} events");                
                 ExtractorHelper.Unsubscribe(topicConsumer, _console);
             }
 

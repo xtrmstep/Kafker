@@ -21,6 +21,7 @@ namespace KafkaTopicExtractor
                 .AddSingleton<IFileTagProvider, FileTagProvider>()
                 .AddSingleton<IExtractCommand, ExtractCommand>()
                 .AddSingleton<ICreateTemplateCommand, CreateTemplateCommand>()
+                .AddSingleton<IListCommand, ListCommand>()
                 .AddSingleton(PhysicalConsole.Singleton)
                 .Configure<KafkaTopicExtractorSettings>(configuration.GetSection(nameof(KafkaTopicExtractorSettings)))
                 .BuildServiceProvider();
@@ -54,6 +55,15 @@ namespace KafkaTopicExtractor
                 {
                     var createTemplateCommand = services.GetService<ICreateTemplateCommand>();
                     return await createTemplateCommand.InvokeAsync(cancellationToken, nameArg.Value());
+                });
+            });
+            
+            app.Command("list", p =>
+            {
+                p.OnExecuteAsync(async cancellationToken =>
+                {
+                    var listCommand = services.GetService<IListCommand>();
+                    return await listCommand.InvokeAsync();
                 });
             });
 
