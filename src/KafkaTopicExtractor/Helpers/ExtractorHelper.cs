@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Confluent.Kafka;
 using KafkaTopicExtractor.Configurations;
+using KafkaTopicExtractor.Csv;
 using McMaster.Extensions.CommandLineUtils;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -88,9 +89,9 @@ namespace KafkaTopicExtractor.Helpers
             console.Out.WriteLineAsync($"Consumer unsubscribed");
         }
 
-        public static object CreateCsvFileWriter()
+        public static ICsvFileWriter CreateCsvFileWriter(FileInfo destinationCsvFile, TopicMappingConfiguration mapping, IConsole console)
         {
-            throw new NotImplementedException();
+            return new CsvFileIo(destinationCsvFile, mapping, console);
         }
     }
 }

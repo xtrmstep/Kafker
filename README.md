@@ -42,9 +42,9 @@ to be updated
 
 ### JSON to CSV mapping
 
-The tool will try to parse Kafka event to JSON. It uses [Json.NET](https://www.newtonsoft.com/json) and [CsvHelper](https://joshclose.github.io/CsvHelper/).
+The tool will try to parse Kafka event to JSON. It uses [Json.NET](https://www.newtonsoft.com/json), [JsonFlatten](https://github.com/GFoley83/JsonFlatten) and [CsvHelper](https://joshclose.github.io/CsvHelper/).
 
-When message is deserialized to JSON, the tool will try to use provided map-file to extract fields. If the map-file is not provided, it flatten JSON using `_` as a separator for nested properties.
+When message is deserialized to JSON, the tool will try to use provided map-file to extract fields. If the map-file is not provided, it flatten JSON using `.` as a separator for nested properties.
 
 Example of MAP file:
 

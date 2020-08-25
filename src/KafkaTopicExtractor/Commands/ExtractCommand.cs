@@ -27,7 +27,8 @@ namespace KafkaTopicExtractor.Commands
             var mapping = await ExtractorHelper.ReadMappingConfigurationAsync(map ?? topic, _settings, _console);
 
             var topicConsumer = ExtractorHelper.CreateKafkaTopicConsumer(cfg, _console);
-            var csvFile = ExtractorHelper.CreateCsvFileWriter();
+            var destinationCsvFile = ExtractorHelper.GetDestinationCsvFilename(topic, _settings, _fileTagProvider);
+            var csvFileWriter = ExtractorHelper.CreateCsvFileWriter(destinationCsvFile, mapping, _console);
             
             try
             {
@@ -43,6 +44,7 @@ namespace KafkaTopicExtractor.Commands
                     }
 
                     var json = JObject.Parse(consumeResult.Message.Value);
+                    await csvFileWriter.WriteAsync(cancellationToken, json);
                 }
             }
             finally
