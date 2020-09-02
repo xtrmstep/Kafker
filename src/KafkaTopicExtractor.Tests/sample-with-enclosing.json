@@ -1,0 +1,30 @@
+{
+  "event" : {
+    "operator_customer" : "41_23647964",
+    "operator_id" : 41,
+    "customer_id" : 23647964,
+    "cnt_total" : 1,
+    "cnt_placed" : 1,
+    "cnt_declined" : 0,
+    "cnt_single" : 1,
+    "cnt_combo" : 0,
+    "cnt_system" : 0,
+    "cnt_live" : 1,
+    "cnt_prelive" : 0,
+    "cnt_moneyline" : 0,
+    "cnt_handicap" : 0,
+    "cnt_overunder" : 1,
+    "cnt_mobile" : 1,
+    "avg_stake_gbp" : 105.333464716126,
+    "avg_gain_gbp" : 117.725572441296,
+    "avg_max_win_gbp" : 10981.04362,
+    "avg_max_stake_gbp" : 1291.887484705882,
+    "avg_expected_win" : 12.392107725169993,
+    "stddev_stake_gbp" : 0.0,
+    "stddev_gain_gbp" : 0.0,
+    "stddev_max_win_gbp" : 0.0,
+    "stddev_max_stake_gbp" : 0.0,
+    "stddev_expected_win" : 0.0,
+    "updated" : "2020-08-27 18:01:56"
+  }
+}
