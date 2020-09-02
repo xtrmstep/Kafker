@@ -1,6 +1,6 @@
-# CLI tool to extract Kafka topic to CSV file
+# CLI tool to extract a Kafka topic to a CSV file
 
-The tool is reading a Kafka topic and stores events into CSV file. The topic should be in JSON format.
+Kafker is a CLI tool written on .NET Core. It is reading a Kafka topic and stores events into a CSV file. It works with topics which have messages in JSON format.
 
 ## Configurations
 
@@ -10,16 +10,16 @@ There are several options to read Kafka topic:
 
 - from beginning (earliest)
 - only new events (latest)
-- from specific offset
 
-In all cases you can specify a number of events to be read. By default the tool reads topic until it's topped with Ctrl+C.
+In all cases you can specify a number of events to be read. By default the tool reads topic until it's stopped with Ctrl+C.
 
 The simplest command to extract a topic to CSV file is as follows:
 
 ```bash
-./kafka-topic-extractor.exe --topic topic
+./kafker.exe --topic topic
 ```
-This command will produce a file `topic-<date>-<time>.csv` with serialized events. For this command to work you ned to have in the working folder (or current folder) following artifacts:
+
+This command relies on existing configuration with name `topic`. It will produce a file `topic-<date>-<time>.csv` with serialized events in table form. The configuration should be located in working folder or current folder and consists of following artifacts:
 
 - `topic.cfg` - a file with information about Kafka broker endpoints and topic name, offset and other parameters (see below) 
 - `topic.map` - a file with information about mapping for this topic
@@ -29,7 +29,7 @@ This command will produce a file `topic-<date>-<time>.csv` with serialized event
 The following command will show all possible commands and options for this CLI.
 
 ```bash
-./kafka-topic-extractor.exe --help
+./kafker.exe --help
 ```
 
 Any of this arguments can be used in CFG file to set a default value. If CFG file has a value for a command or option it will be overriden with explicitly specified one in command line.
@@ -70,7 +70,7 @@ Let's read some topic and send extracted events to another topic. Before using t
 Create templates
 
 ```bash
-./kafka-topic-extractor.exe create-template source-topic
+./kafker.exe create-template source-topic
 ```
 
 This command will create two files: `source-topic.cfg` and `source-topic.map`. In CFG file you need to specify Kafka broker(s) and exact topic name. Also you may specify number of events to read (`EventsToRead`) and other parameters. In MAP file you may want to specify a mapping. If there is no mapping, then all fields will be extracted. Let's extract all fields.
@@ -85,13 +85,13 @@ This command will create two files: `source-topic.cfg` and `source-topic.map`. I
 You can check which topic configurations you have:
 
 ```bash
-./kafka-topic-extractor.exe list
+./kafker.exe list
 ```
 
 Now let's extract events from the topic:
 
 ```bash
-./kafka-topic-extractor.exe extract -t source-topic
+./kafker.exe extract -t source-topic
 ```
 
 This command will read those two CFG and MAP files, read certain number of events (press Ctrl+C to break the operation earlier if you need). When it's finished in the destination folder (defined in the `appsetting.json`) you'll find a CSV file. The name of the file will have topic's name and timestamp in its name (e.g., `source-topic_20200825_054112.csv`).
@@ -99,7 +99,7 @@ This command will read those two CFG and MAP files, read certain number of event
 Now let's send this file to another topic. You need to create a new template and update it with new information. If you're not specifying the mapping, JSON field in th Kafka event will be called same as in the file. The following command will read lines from file and emit them to Kafka topic.
 
 ```bash
-./kafka-topic-extractor.exe emit -t destination-topic c://csv_files/source-topic_20200825_054112.csv
+./kafker.exe emit -t destination-topic c://csv_files/source-topic_20200825_054112.csv
 ``` 
 
 That's it.
