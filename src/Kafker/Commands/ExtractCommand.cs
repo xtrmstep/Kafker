@@ -57,7 +57,6 @@ namespace Kafker.Commands
                         await _console.Out.WriteLineAsync($"  processed {eventNumber}/{totalEventsToRead}");
                     else
                         await _console.Out.WriteLineAsync($"  processed {eventNumber}");
-                    await Task.Delay(5, cancellationToken);
 
                     // check if we need to stop reading events
                     if (totalEventsToRead > 0 && eventNumber == totalEventsToRead)

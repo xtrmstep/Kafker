@@ -43,7 +43,6 @@ namespace Kafker.Commands
                     await ExtractorHelper.ProduceAsync(topicProducer, cfg, json);
                     producedEvents++;
                     await _console.Out.WriteAsync($".");
-                    await Task.Delay(5, cancellationToken);
                 }
             }
             finally
