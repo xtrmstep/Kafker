@@ -1,10 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
+using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Runtime.Serialization;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using CsvHelper;
 using JsonFlatten;
 using Kafker.Configurations;
 using McMaster.Extensions.CommandLineUtils;
@@ -12,12 +15,6 @@ using Newtonsoft.Json.Linq;
 
 namespace Kafker.Csv
 {
-    public abstract class CsvFileBase
-    {
-        protected const string CSV_SEPARATOR = ";";
-
-    }
-    
     public class CsvFileWriter : CsvFileBase, ICsvFileWriter
     {
         private string _csvHeader;
@@ -59,7 +56,7 @@ namespace Kafker.Csv
         {
             if (!mapping.Mapping.Any()) return;
             _jsonToCsvMapping = mapping.Mapping;
-            _csvHeader = string.Join(CSV_SEPARATOR, _jsonToCsvMapping.Keys);
+            _csvHeader = string.Join(CSV_VALUE_SEPARATOR, _jsonToCsvMapping.Keys);
         }
 
         private string BuildLine(IDictionary<string, string> mapping, JObject json)
@@ -68,13 +65,28 @@ namespace Kafker.Csv
             var lineDic = new Dictionary<string, object>();
             foreach (var mappingKey in mapping.Keys)
             {
-                var strValue = string.Empty;
                 var mappedField = mapping[mappingKey];
-                if (dic.TryGetValue(mappedField, out var value)) strValue = Convert.ToString(value);
-                lineDic.Add(mappingKey, strValue);
+                if (!dic.TryGetValue(mappedField, out var value)) continue;
+                
+                var strValue = Convert.ToString(value) ?? string.Empty;
+                if (value != null && value.GetType().IsPrimitive)
+                {
+                    lineDic.Add(mappingKey, strValue);
+                }
+                else
+                {
+                    // replace some system type names of empty sequences with blank values
+                    if (CSV_VALUE_REPLACEMENTS.Contains(strValue)) strValue = string.Empty;
+                    
+                    // use sortable format for date/time values (should be in UTC)
+                    if (value is DateTime time) strValue = time.ToString("yyyy-MM-dd HH:mm:ss");
+                            
+                    var csvValue = $"{CSV_VALUE_WRAPPER}{strValue}{CSV_VALUE_WRAPPER}";
+                    lineDic.Add(mappingKey, csvValue);
+                }                
             }
 
-            return string.Join(CSV_SEPARATOR, lineDic.Values);
+            return string.Join(CSV_VALUE_SEPARATOR, lineDic.Values);
         }
 
         private async Task WriteHeaderAsync(JObject json)
@@ -90,70 +102,6 @@ namespace Kafker.Csv
                 await _streamWriter.WriteLineAsync(_csvHeader);
                 _isCsvHeaderWrittenToFile = true;
             }
-        }
-    }
-
-    public class CsvFileReader : CsvFileBase, ICsvFileReader
-    {
-        private readonly IConsole _console;
-        private StreamReader _streamReader;
-        private string[] _fileFields;
-        private IDictionary<string, string> _destinationFields;
-
-        public CsvFileReader(FileSystemInfo fileInfo, TopicMappingConfiguration mapping, IConsole console)
-        {
-            _console = console;
-            InitCsvFile(fileInfo);
-            InitMapping(mapping);
-        }
-
-        private void InitMapping(TopicMappingConfiguration mapping)
-        {
-            var headerLine = _streamReader.ReadLine();
-            Contract.Assert(headerLine != null, "Cannot read line or it's empty");
-            Contract.Assert(headerLine.Length > 0, "Cannot read line or it's empty");
-            
-            _fileFields = headerLine.Split(CSV_SEPARATOR);
-            _destinationFields = (mapping.Mapping!= null && mapping.Mapping.Any() ? mapping.Mapping : null) 
-                                 ?? _fileFields.ToDictionary(f => f, f => f);
-        }
-
-        private void InitCsvFile(FileSystemInfo fileInfo)
-        {
-            _console.WriteLine($"CSV file: {fileInfo.FullName}");
-            if (!File.Exists(fileInfo.FullName))
-            {
-                var message = $"Cannot find or read the file: {fileInfo.FullName}";
-                _console.WriteLine(message);
-                throw new ApplicationException(message);
-            }
-            _streamReader = File.OpenText(fileInfo.FullName);
-        }
-
-        /// <inheritdoc />
-        public void Dispose()
-        {
-            _streamReader.Close();
-            _streamReader.Dispose();
-            _streamReader = null;
-        }
-
-        /// <inheritdoc />
-        public async Task<JObject> ReadLineAsync(CancellationToken cancellationToken)
-        {
-            var line = await _streamReader.ReadLineAsync();
-            if (line == null) return null;
-
-            var values = line.Split(CSV_SEPARATOR);
-            var dic = new Dictionary<string, object>();
-            for (var idx = 0; idx < _fileFields.Length; idx++)
-            {
-                var fileField = _fileFields[idx];
-                var value = values[idx];
-                dic.Add(_destinationFields[fileField], value);
-            }
-
-            return dic.Unflatten();
         }
     }
 }

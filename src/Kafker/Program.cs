@@ -27,7 +27,7 @@ namespace Kafker
                 .Configure<KafkerSettings>(configuration.GetSection(nameof(KafkerSettings)))
                 .BuildServiceProvider();
 
-            var app = new CommandLineApplication
+            using var app = new CommandLineApplication
             {
                 Name = "kafker",
                 Description = "CLI to extract Kafka topic with JSON events to CSV file"
@@ -94,7 +94,7 @@ namespace Kafker
                 return await Task.FromResult(0).ConfigureAwait(false);
             });
 
-            return await app.ExecuteAsync(args);
+            return await app.ExecuteAsync(args).ConfigureAwait(false);
         }
 
         public static IConfigurationRoot CreateConfiguration(string environment)

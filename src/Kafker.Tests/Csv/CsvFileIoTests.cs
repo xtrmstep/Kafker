@@ -27,8 +27,8 @@ namespace Kafker.Tests.Csv
         {
             var expected = new[]
             {
-                "Name;Color;Attributes[0].Name;Attributes[0].Value;Attributes[1].Name;Attributes[1].Value[0].Type;Attributes[1].Value[0].Length",
-                "Fish;Silver;Environment;Aquatic;Parts;fin;3"
+                @"Name,Color,Attributes[0].Name,Attributes[0].Value,Attributes[1].Name,Attributes[1].Value[0].Type,Attributes[1].Value[0].Length",
+                @"""Fish"",""Silver"",""Environment"",""Aquatic"",""Parts"",""fin"",3"
             };
             var emptyMapping = new TopicMappingConfiguration();
             using (var csvFileIo = new CsvFileWriter(_fileInfo, emptyMapping, PhysicalConsole.Singleton))
@@ -46,7 +46,7 @@ namespace Kafker.Tests.Csv
         {
             var expected = new[]
             {
-                "Attributes[1].Value[0].Length",
+                @"Attributes[1].Value[0].Length",
                 "3"
             };
             var mapping = new TopicMappingConfiguration();

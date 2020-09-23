@@ -28,7 +28,7 @@ namespace Kafker.Commands
 
             using var topicConsumer = ExtractorHelper.CreateKafkaTopicConsumer(cfg, _console);
             var destinationCsvFile = ExtractorHelper.GetDestinationCsvFilename(topic, _settings, _fileTagProvider);
-            var csvFileWriter = ExtractorHelper.CreateCsvFileWriter(destinationCsvFile, mapping, _console);
+            using var csvFileWriter = ExtractorHelper.CreateCsvFileWriter(destinationCsvFile, mapping, _console);
 
             var consumedEventsInTotal = 0;
             try
