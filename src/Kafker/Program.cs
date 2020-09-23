@@ -29,7 +29,7 @@ namespace Kafker
 
             var app = new CommandLineApplication
             {
-                Name = "kafka-topic-extractor",
+                Name = "kafker",
                 Description = "CLI to extract Kafka topic with JSON events to CSV file"
             };
             app.Conventions
