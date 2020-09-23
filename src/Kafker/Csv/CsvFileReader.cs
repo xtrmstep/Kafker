@@ -1,16 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using CsvHelper;
-using Dynamitey;
 using JsonFlatten;
 using Kafker.Configurations;
-using Kafker.Helpers;
 using McMaster.Extensions.CommandLineUtils;
 using Newtonsoft.Json.Linq;
 
@@ -22,7 +18,6 @@ namespace Kafker.Csv
         private StreamReader _streamReader;
         private string[] _fileFields;
         private IDictionary<string, string> _destinationFields;
-        private CsvReader _csvReader;
 
         public CsvFileReader(FileSystemInfo fileInfo, TopicMappingConfiguration mapping, IConsole console)
         {
@@ -52,15 +47,11 @@ namespace Kafker.Csv
                 throw new ApplicationException(message);
             }
             _streamReader = File.OpenText(fileInfo.FullName);
-            _csvReader = new CsvReader(_streamReader, CultureInfo.InvariantCulture);
         }
 
         /// <inheritdoc />
         public void Dispose()
         {
-            _csvReader.Dispose();
-            _csvReader = null;
-            
             _streamReader.Close();
             _streamReader.Dispose();
             _streamReader = null;
@@ -69,17 +60,15 @@ namespace Kafker.Csv
         /// <inheritdoc />
         public async Task<JObject> ReadLineAsync(CancellationToken cancellationToken)
         {
-            var record = _csvReader.GetRecord<dynamic>();
-            IEnumerable<string> n = Dynamic.GetMemberNames(record);            
-            if (record == null || n == null || !(n ?? new string[0]).Any()) return null;
+            var line = await _streamReader.ReadLineAsync();
+            if (line == null) return null;
 
-            var na = n.ToArray();
-
+            var values = line.Split(CSV_VALUE_SEPARATOR);
             var dic = new Dictionary<string, object>();
             for (var idx = 0; idx < _fileFields.Length; idx++)
             {
                 var fileField = _fileFields[idx];
-                var value = Dynamic.InvokeGet(record, na[idx]);
+                var value = values[idx];
                 dic.Add(_destinationFields[fileField], value);
             }
 
