@@ -60,7 +60,7 @@ namespace Kafker.Commands
                     await Task.Delay(5, cancellationToken);
 
                     // check if we need to stop reading events
-                    if (totalEventsToRead > 0 && eventNumber == totalEventsToRead)
+                    if (totalEventsToRead > 0 && eventNumber >= totalEventsToRead)
                         break;
                 }
             }
@@ -70,7 +70,7 @@ namespace Kafker.Commands
                 ExtractorHelper.Unsubscribe(topicConsumer, _console);
             }
 
-            return 1; // ok
+            return await Task.FromResult(0).ConfigureAwait(false); // ok
         }
     }
 }

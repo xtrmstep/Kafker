@@ -91,7 +91,7 @@ namespace Kafker
             {
                 await PhysicalConsole.Singleton.Error.WriteLineAsync("Specify a command");
                 app.ShowHelp();
-                return await Task.FromResult(1);
+                return await Task.FromResult(0).ConfigureAwait(false);
             });
 
             return await app.ExecuteAsync(args);
