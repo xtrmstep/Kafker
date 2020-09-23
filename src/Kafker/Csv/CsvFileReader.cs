@@ -85,11 +85,5 @@ namespace Kafker.Csv
 
             return dic.Unflatten();
         }
-
-        /// <inheritdoc />
-        public bool Read()
-        {
-            return _csvReader.Read();
-        }
     }
 }
