@@ -9,6 +9,7 @@ using JsonFlatten;
 using Kafker.Configurations;
 using McMaster.Extensions.CommandLineUtils;
 using Newtonsoft.Json.Linq;
+using Microsoft.VisualBasic.FileIO;
 
 namespace Kafker.Csv
 {
@@ -18,6 +19,7 @@ namespace Kafker.Csv
         private StreamReader _streamReader;
         private string[] _fileFields;
         private IDictionary<string, string> _destinationFields;
+        private TextFieldParser _csvParser;
 
         public CsvFileReader(FileSystemInfo fileInfo, TopicMappingConfiguration mapping, IConsole console)
         {
@@ -47,23 +49,31 @@ namespace Kafker.Csv
                 throw new ApplicationException(message);
             }
             _streamReader = File.OpenText(fileInfo.FullName);
+
+            _csvParser = new TextFieldParser(fileInfo.FullName);
+            _csvParser.SetDelimiters(CSV_VALUE_SEPARATOR);
+            _csvParser.HasFieldsEnclosedInQuotes = true;
+            // Skip the row with the column names
+            _csvParser.ReadLine();
         }
 
         /// <inheritdoc />
         public void Dispose()
         {
+            _csvParser.Close();
+            _csvParser = null;
+                
             _streamReader.Close();
             _streamReader.Dispose();
             _streamReader = null;
         }
 
         /// <inheritdoc />
-        public async Task<JObject> ReadLineAsync(CancellationToken cancellationToken)
+        public JObject ReadLine()
         {
-            var line = await _streamReader.ReadLineAsync();
-            if (line == null) return null;
-
-            var values = line.Split(CSV_VALUE_SEPARATOR);
+            if (_csvParser.EndOfData) return null;
+            
+            var values = _csvParser.ReadFields();
             var dic = new Dictionary<string, object>();
             for (var idx = 0; idx < _fileFields.Length; idx++)
             {

@@ -38,7 +38,7 @@ namespace Kafker.Commands
                 producedEvents = 0;
                 while (!cancellationToken.IsCancellationRequested)
                 {
-                    var json = await csvFileReader.ReadLineAsync(cancellationToken);
+                    var json = csvFileReader.ReadLine();
                     if (json == null) break;
                     
                     await ExtractorHelper.ProduceAsync(topicProducer, cfg, json);

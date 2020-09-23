@@ -7,6 +7,6 @@ namespace Kafker.Csv
 {
     public interface ICsvFileReader : IDisposable
     {
-        Task<JObject> ReadLineAsync(CancellationToken cancellationToken);
+        JObject ReadLine();
     }
 }
