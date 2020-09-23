@@ -59,7 +59,7 @@ namespace Kafker.Commands
                         await _console.Out.WriteLineAsync($"  processed {eventNumber}");
 
                     // check if we need to stop reading events
-                    if (totalEventsToRead > 0 && eventNumber == totalEventsToRead)
+                    if (totalEventsToRead > 0 && eventNumber >= totalEventsToRead)
                         break;
                 }
             }
@@ -69,7 +69,7 @@ namespace Kafker.Commands
                 ExtractorHelper.Unsubscribe(topicConsumer, _console);
             }
 
-            return 1; // ok
+            return await Task.FromResult(0).ConfigureAwait(false); // ok
         }
     }
 }
