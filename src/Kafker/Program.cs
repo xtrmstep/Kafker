@@ -24,6 +24,7 @@ namespace Kafker
             var kafkerSettings = configuration.GetSection(nameof(KafkerSettings)).Get<KafkerSettings>();
             var services = new ServiceCollection()
                 .AddSingleton<IConsumerFactory, ConsumerFactory>()
+                .AddSingleton<IProducerFactory, ProducerFactory>()
                 .AddSingleton<IFileTagProvider, FileTagProvider>()
                 .AddSingleton<IExtractCommand, ExtractCommand>()
                 .AddSingleton<ICreateTemplateCommand, CreateTemplateCommand>()

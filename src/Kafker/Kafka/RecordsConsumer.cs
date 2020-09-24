@@ -10,7 +10,7 @@ namespace Kafker.Kafka
     {
         private readonly KafkaTopicConfiguration _config;
         private readonly IConsole _console;
-        private readonly IConsumer<Ignore, string> _consumer;
+        private IConsumer<Ignore, string> _consumer;
         private bool _isUnsubscribed;
 
         public RecordsConsumer(IConsole console, KafkaTopicConfiguration config)
@@ -44,6 +44,9 @@ namespace Kafker.Kafka
         public void Dispose()
         {
             if (!_isUnsubscribed) Unsubscribe();
+            // Note: the next two lines cause the application to hang
+            // _consumer.Dispose();
+            // _consumer = null;
         }
 
         public void Unsubscribe()

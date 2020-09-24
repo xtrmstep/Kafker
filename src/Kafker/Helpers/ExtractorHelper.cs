@@ -41,31 +41,5 @@ namespace Kafker.Helpers
 
             return topicMapping;
         }
-
-        public static IProducer<string, string> CreateKafkaTopicProducer(KafkaTopicConfiguration config, IConsole console)
-        {
-            var producerConfig = new ProducerConfig
-            {
-                BootstrapServers = string.Join(',', config.Brokers)
-            };
-            var producerBuilder = new ProducerBuilder<string, string>(producerConfig);
-            var producer = producerBuilder.Build();
-            
-            console.WriteLine($"Created a producer:");
-            console.WriteLine($"    brokers: {producerConfig.BootstrapServers}");
-            console.WriteLine($"    topic: {config.Topic}");
-            
-            return producer;
-        }
-
-        public static async Task ProduceAsync(IProducer<string,string> producer, KafkaTopicConfiguration cfg, JToken json)
-        {
-            var message = new Message<string, string>
-            {
-                Key = string.Empty,
-                Value = json.ToString(Formatting.None)
-            };
-            await producer.ProduceAsync(cfg.Topic, message);
-        }
     }
 }

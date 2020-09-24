@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Data;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using Confluent.Kafka;
 using JsonFlatten;
@@ -43,7 +44,7 @@ namespace Kafker.Helpers
         public async Task SaveToFileAsync(FileInfo destinationCsvFile)
         {
             await Task.Yield();
-            //CSVLibraryAK.CSVLibraryAK.Export(destinationCsvFile.FullName, _tbl);
+            //CSVLibraryAK.CSVLibraryAK.Export(sourceFile.FullName, _tbl);
 
             await using var fs = File.CreateText(destinationCsvFile.FullName);
             foreach (var pair in _buffer)
@@ -74,10 +75,23 @@ namespace Kafker.Helpers
             return result.ToArray();
         }
         
-        public async Task LoadFromFileAsync(string destinationCsvFile)
+        public async Task LoadFromFileAsync(string sourceFile)
         {
             await Task.Yield();
-            _tbl = CSVLibraryAK.CSVLibraryAK.Import(destinationCsvFile, true);
+            //_tbl = CSVLibraryAK.CSVLibraryAK.Import(sourceFile, true);
+            var lines = await File.ReadAllLinesAsync(sourceFile);
+            foreach (var line in lines)
+            {
+                var pair = line.Split("|");
+                var timestamp = pair[0].Substring(1, pair[0].Length - 2);
+                var record = pair[1].Substring(1, pair[1].Length - 2);
+                _buffer.Add(new Timestamp(long.Parse(timestamp),TimestampType.CreateTime), record);
+            }
+        }
+
+        public IEnumerable<string> GetRecords()
+        {
+            return _buffer.Values.ToArray();
         }
     }
 }
