@@ -42,39 +42,6 @@ namespace Kafker.Helpers
             return topicMapping;
         }
 
-        public static IConsumer<Ignore, string> CreateKafkaTopicConsumer(KafkaTopicConfiguration config, IConsole console)
-        {
-            var dt = DateTimeOffset.Now;
-            var consumerGroupTag = $"{dt:yyyyMMdd}_{dt:hhmmss}";
-
-            var consumerConfig = new ConsumerConfig
-            {
-                BootstrapServers = string.Join(',', config.Brokers),
-                GroupId = $"kafka_topic_extractor_{consumerGroupTag}",
-                EnableAutoCommit = true,
-                StatisticsIntervalMs = 5000,
-                SessionTimeoutMs = 6000,
-                AutoOffsetReset = config.OffsetKind == OffsetKind.Earliest ? AutoOffsetReset.Earliest : AutoOffsetReset.Latest,
-                EnablePartitionEof = true
-            };
-            var consumerBuilder = new ConsumerBuilder<Ignore, string>(consumerConfig);
-            var consumer = consumerBuilder.Build();
-            consumer.Subscribe(config.Topic);
-
-            console.WriteLine($"Created a consumer: {consumerConfig.GroupId}");
-            console.WriteLine($"    brokers: {consumerConfig.BootstrapServers}");
-            console.WriteLine($"    autoOffsetReset: {consumerConfig.AutoOffsetReset}");
-            console.WriteLine($"    topic: {config.Topic}");
-
-            return consumer;
-        }
-
-        public static void Unsubscribe(IConsumer<Ignore, string> consumer, IConsole console)
-        {
-            consumer.Unsubscribe();
-            console.WriteLine("Consumer unsubscribed");
-        }
-
         public static IProducer<string, string> CreateKafkaTopicProducer(KafkaTopicConfiguration config, IConsole console)
         {
             var producerConfig = new ProducerConfig

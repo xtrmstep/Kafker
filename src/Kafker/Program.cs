@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Kafker.Commands;
 using Kafker.Configurations;
 using Kafker.Helpers;
+using Kafker.Kafka;
 using McMaster.Extensions.CommandLineUtils;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -20,14 +21,16 @@ namespace Kafker
             var environment = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT");
             var configuration = CreateConfiguration(environment);
 
+            var kafkerSettings = configuration.GetSection(nameof(KafkerSettings)).Get<KafkerSettings>();
             var services = new ServiceCollection()
+                .AddSingleton<IConsumerFactory, ConsumerFactory>()
                 .AddSingleton<IFileTagProvider, FileTagProvider>()
                 .AddSingleton<IExtractCommand, ExtractCommand>()
                 .AddSingleton<ICreateTemplateCommand, CreateTemplateCommand>()
                 .AddSingleton<IListCommand, ListCommand>()
                 .AddSingleton<IEmitCommand, EmitCommand>()
                 .AddSingleton(PhysicalConsole.Singleton)
-                .Configure<KafkerSettings>(configuration.GetSection(nameof(KafkerSettings)))
+                .AddSingleton(kafkerSettings)
                 .BuildServiceProvider();
 
             using var app = new CommandLineApplication

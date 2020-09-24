@@ -2,6 +2,7 @@
 using System.Data;
 using System.IO;
 using System.Threading.Tasks;
+using Confluent.Kafka;
 using JsonFlatten;
 using Kafker.Configurations;
 using Newtonsoft.Json.Linq;
@@ -11,8 +12,14 @@ namespace Kafker.Helpers
     public class RecordsBuffer
     {
         private DataTable _tbl = new DataTable();
-        
-        public void Add(JObject json)
+        private Dictionary<Timestamp, string> _buffer = new Dictionary<Timestamp, string>();
+
+        public void Add(Timestamp messageTimestamp, string json)
+        {
+            _buffer.Add(messageTimestamp, json);
+        }
+
+        public void Convert(JObject json)
         {
             var dic = json.Flatten();
             var columns = new List<string>(dic.Keys);
@@ -33,10 +40,18 @@ namespace Kafker.Helpers
             _tbl.Rows.Add(row);
         }
 
-        public async Task SaveToFileAsync(FileInfo destinationCsvFile, TopicMappingConfiguration topicMappingConfiguration)
+        public async Task SaveToFileAsync(FileInfo destinationCsvFile)
         {
             await Task.Yield();
-            CSVLibraryAK.CSVLibraryAK.Export(destinationCsvFile.FullName, _tbl);
+            //CSVLibraryAK.CSVLibraryAK.Export(destinationCsvFile.FullName, _tbl);
+
+            await using var fs = File.CreateText(destinationCsvFile.FullName);
+            foreach (var pair in _buffer)
+            {
+                await fs.WriteLineAsync($"\"{pair.Key.UnixTimestampMs}\"|\"{pair.Value}\"");
+            }
+
+            await fs.FlushAsync();
         }
 
         public async Task<JObject[]> GetJsonRecordsAsync(TopicMappingConfiguration topicMappingConfiguration)
