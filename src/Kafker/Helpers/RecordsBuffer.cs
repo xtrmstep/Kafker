@@ -15,7 +15,7 @@ namespace Kafker.Helpers
     {
         private readonly IConsole _console;
         private DataTable _tbl = new DataTable();
-        private Dictionary<Timestamp, string> _buffer = new Dictionary<Timestamp, string>();
+        private List<KeyValuePair<Timestamp, string>> _buffer = new List<KeyValuePair<Timestamp, string>>();
 
         public RecordsBuffer(IConsole console)
         {
@@ -24,7 +24,8 @@ namespace Kafker.Helpers
         
         public void Add(Timestamp messageTimestamp, string json)
         {
-            _buffer.Add(messageTimestamp, json);
+            var pair = new KeyValuePair<Timestamp,string>(messageTimestamp, json);
+            _buffer.Add(pair);
         }
 
         public void Convert(JObject json)
@@ -96,7 +97,8 @@ namespace Kafker.Helpers
                 var pair = line.Split("|");
                 var timestamp = pair[0].Substring(1, pair[0].Length - 2);
                 var record = pair[1].Substring(1, pair[1].Length - 2);
-                _buffer.Add(new Timestamp(long.Parse(timestamp),TimestampType.CreateTime), record);
+                var item = new KeyValuePair<Timestamp, string>(new Timestamp(long.Parse(timestamp),TimestampType.CreateTime), record);
+                _buffer.Add(item);
                 
                 await _console.Out.WriteAsync($"\rloaded {++idx}...");
             }
@@ -104,7 +106,7 @@ namespace Kafker.Helpers
 
         public IEnumerable<string> GetRecords()
         {
-            return _buffer.Values.ToArray();
+            return _buffer.Select(p => p.Value).ToArray();
         }
     }
 }
