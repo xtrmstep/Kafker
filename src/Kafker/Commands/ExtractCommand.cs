@@ -37,12 +37,12 @@ namespace Kafker.Commands
                 var numberOfReadEvents = 0;
                 var totalEventsToRead = cfg.EventsToRead; // 0 - infinite
                 totalNumberOfConsumedEvents = 0;
-                var recordsBuffer = new RecordsBuffer();
+                var recordsBuffer = new RecordsBuffer(_console);
                 while (!cancellationToken.IsCancellationRequested)
                 {
                     var consumeResult = topicConsumer.Consume(cancellationToken);
                     totalNumberOfConsumedEvents++;
-                    if (consumeResult.IsPartitionEOF) continue;
+                    if (consumeResult.IsPartitionEOF) break;
 
                     if (string.IsNullOrWhiteSpace(consumeResult.Message.Value))
                     {
@@ -54,9 +54,9 @@ namespace Kafker.Commands
                     recordsBuffer.Add(consumeResult.Message.Timestamp, consumeResult.Message.Value);                    
 
                     if (totalEventsToRead > 0)
-                        await _console.Out.WriteLineAsync($"  processed {numberOfReadEvents}/{totalEventsToRead}");
+                        await _console.Out.WriteAsync($"\rloaded {numberOfReadEvents}/{totalEventsToRead}...");
                     else
-                        await _console.Out.WriteLineAsync($"  processed {numberOfReadEvents}");
+                        await _console.Out.WriteAsync($"\rloaded {numberOfReadEvents}...");
 
                     // check if we need to stop reading events
                     if (totalEventsToRead > 0 && numberOfReadEvents >= totalEventsToRead)
@@ -66,7 +66,7 @@ namespace Kafker.Commands
             }
             finally
             {
-                await _console.Out.WriteLineAsync($"Consumed {totalNumberOfConsumedEvents} events");
+                await _console.Out.WriteLineAsync($"\n\rConsumed {totalNumberOfConsumedEvents} events");
             }
 
             return await Task.FromResult(0).ConfigureAwait(false); // ok

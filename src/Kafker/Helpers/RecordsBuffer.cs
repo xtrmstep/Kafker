@@ -6,15 +6,22 @@ using System.Threading.Tasks;
 using Confluent.Kafka;
 using JsonFlatten;
 using Kafker.Configurations;
+using McMaster.Extensions.CommandLineUtils;
 using Newtonsoft.Json.Linq;
 
 namespace Kafker.Helpers
 {
     public class RecordsBuffer
     {
+        private readonly IConsole _console;
         private DataTable _tbl = new DataTable();
         private Dictionary<Timestamp, string> _buffer = new Dictionary<Timestamp, string>();
 
+        public RecordsBuffer(IConsole console)
+        {
+            _console = console;
+        }
+        
         public void Add(Timestamp messageTimestamp, string json)
         {
             _buffer.Add(messageTimestamp, json);
@@ -47,9 +54,12 @@ namespace Kafker.Helpers
             //CSVLibraryAK.CSVLibraryAK.Export(sourceFile.FullName, _tbl);
 
             await using var fs = File.CreateText(destinationCsvFile.FullName);
+            float total = _buffer.Count;
+            float idx = 0;
             foreach (var pair in _buffer)
             {
                 await fs.WriteLineAsync($"\"{pair.Key.UnixTimestampMs}\"|\"{pair.Value}\"");
+                await _console.Out.WriteAsync($"\rstored {++idx / total * 100:f2}% [{idx:f0}/{total:f0}]");
             }
 
             await fs.FlushAsync();
@@ -80,12 +90,15 @@ namespace Kafker.Helpers
             await Task.Yield();
             //_tbl = CSVLibraryAK.CSVLibraryAK.Import(sourceFile, true);
             var lines = await File.ReadAllLinesAsync(sourceFile);
+            var idx = 0;
             foreach (var line in lines)
             {
                 var pair = line.Split("|");
                 var timestamp = pair[0].Substring(1, pair[0].Length - 2);
                 var record = pair[1].Substring(1, pair[1].Length - 2);
                 _buffer.Add(new Timestamp(long.Parse(timestamp),TimestampType.CreateTime), record);
+                
+                await _console.Out.WriteAsync($"\rloaded {++idx}...");
             }
         }
 
