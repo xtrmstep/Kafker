@@ -1,7 +1,9 @@
-﻿using System.Threading;
+﻿using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using Kafker.Configurations;
 using Kafker.Helpers;
+using Kafker.Kafka;
 using McMaster.Extensions.CommandLineUtils;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json.Linq;
@@ -12,35 +14,35 @@ namespace Kafker.Commands
     {
         private readonly IConsole _console;
         private readonly IFileTagProvider _fileTagProvider;
+        private readonly IConsumerFactory _consumerFactory;
         private readonly KafkerSettings _settings;
 
-        public ExtractCommand(IConsole console, IFileTagProvider fileTagProvider, IOptions<KafkerSettings> settings)
+        public ExtractCommand(IConsole console, IFileTagProvider fileTagProvider, KafkerSettings settings, IConsumerFactory consumerFactory)
         {
             _console = console;
             _fileTagProvider = fileTagProvider;
-            _settings = settings.Value;
+            _consumerFactory = consumerFactory;
+            _settings = settings;
         }
 
         public async Task<int> InvokeAsync(CancellationToken cancellationToken, string topic, string map)
         {
             var cfg = await ExtractorHelper.ReadConfigurationAsync(topic, _settings, _console);
-            var mapping = await ExtractorHelper.ReadMappingConfigurationAsync(map ?? topic, _settings, _console);
-
-            using var topicConsumer = ExtractorHelper.CreateKafkaTopicConsumer(cfg, _console);
-            var destinationCsvFile = ExtractorHelper.GetDestinationCsvFilename(topic, _settings, _fileTagProvider);
-            var csvFileWriter = ExtractorHelper.CreateCsvFileWriter(destinationCsvFile, mapping, _console);
-
-            var consumedEventsInTotal = 0;
+            var destinationCsvFile = GetDestinationCsvFilename(topic, _settings, _fileTagProvider);
+            
+            var totalNumberOfConsumedEvents = 0;
+            using var topicConsumer = _consumerFactory.Create(cfg);
             try
             {
-                var eventNumber = 0;
+                var numberOfReadEvents = 0;
                 var totalEventsToRead = cfg.EventsToRead; // 0 - infinite
-                consumedEventsInTotal = 0;
+                totalNumberOfConsumedEvents = 0;
+                var recordsBuffer = new RecordsBuffer(_console);
                 while (!cancellationToken.IsCancellationRequested)
                 {
                     var consumeResult = topicConsumer.Consume(cancellationToken);
-                    consumedEventsInTotal++;
-                    if (consumeResult.IsPartitionEOF) continue;
+                    totalNumberOfConsumedEvents++;
+                    if (consumeResult.IsPartitionEOF) break;
 
                     if (string.IsNullOrWhiteSpace(consumeResult.Message.Value))
                     {
@@ -48,28 +50,34 @@ namespace Kafker.Commands
                         continue;
                     }
 
-                    eventNumber++;
-
-                    var json = JObject.Parse(consumeResult.Message.Value);
-                    await csvFileWriter.WriteAsync(cancellationToken, json);
+                    numberOfReadEvents++;
+                    recordsBuffer.Add(consumeResult.Message.Timestamp, consumeResult.Message.Value);                    
 
                     if (totalEventsToRead > 0)
-                        await _console.Out.WriteLineAsync($"  processed {eventNumber}/{totalEventsToRead}");
+                        await _console.Out.WriteAsync($"\rloaded {numberOfReadEvents}/{totalEventsToRead}...");
                     else
-                        await _console.Out.WriteLineAsync($"  processed {eventNumber}");
+                        await _console.Out.WriteAsync($"\rloaded {numberOfReadEvents}...");
 
                     // check if we need to stop reading events
-                    if (totalEventsToRead > 0 && eventNumber >= totalEventsToRead)
+                    if (totalEventsToRead > 0 && numberOfReadEvents >= totalEventsToRead)
                         break;
                 }
+                await recordsBuffer.SaveToFileAsync(destinationCsvFile);
             }
             finally
             {
-                await _console.Out.WriteLineAsync($"Consumed {consumedEventsInTotal} events");                
-                ExtractorHelper.Unsubscribe(topicConsumer, _console);
+                await _console.Out.WriteLineAsync($"\n\rConsumed {totalNumberOfConsumedEvents} events");
             }
 
             return await Task.FromResult(0).ConfigureAwait(false); // ok
+        }
+
+        internal static FileInfo GetDestinationCsvFilename(string topic, KafkerSettings setting, IFileTagProvider fileTagProvider)
+        {
+            var tag = fileTagProvider.GetTag();
+            var filePath = Path.Combine(setting.Destination, $"{topic}_{tag}.csv");
+            var fileInfo = new FileInfo(filePath);
+            return fileInfo;
         }
     }
 }

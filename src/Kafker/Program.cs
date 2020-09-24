@@ -1,12 +1,16 @@
 ﻿using System;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Kafker.Commands;
 using Kafker.Configurations;
 using Kafker.Helpers;
+using Kafker.Kafka;
 using McMaster.Extensions.CommandLineUtils;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+
+[assembly:InternalsVisibleTo("Kafker.Tests")]
 
 namespace Kafker
 {
@@ -17,17 +21,20 @@ namespace Kafker
             var environment = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT");
             var configuration = CreateConfiguration(environment);
 
+            var kafkerSettings = configuration.GetSection(nameof(KafkerSettings)).Get<KafkerSettings>();
             var services = new ServiceCollection()
+                .AddSingleton<IConsumerFactory, ConsumerFactory>()
+                .AddSingleton<IProducerFactory, ProducerFactory>()
                 .AddSingleton<IFileTagProvider, FileTagProvider>()
                 .AddSingleton<IExtractCommand, ExtractCommand>()
                 .AddSingleton<ICreateTemplateCommand, CreateTemplateCommand>()
                 .AddSingleton<IListCommand, ListCommand>()
                 .AddSingleton<IEmitCommand, EmitCommand>()
                 .AddSingleton(PhysicalConsole.Singleton)
-                .Configure<KafkerSettings>(configuration.GetSection(nameof(KafkerSettings)))
+                .AddSingleton(kafkerSettings)
                 .BuildServiceProvider();
 
-            var app = new CommandLineApplication
+            using var app = new CommandLineApplication
             {
                 Name = "kafker",
                 Description = "CLI to extract Kafka topic with JSON events to CSV file"
@@ -94,7 +101,7 @@ namespace Kafker
                 return await Task.FromResult(0).ConfigureAwait(false);
             });
 
-            return await app.ExecuteAsync(args);
+            return await app.ExecuteAsync(args).ConfigureAwait(false);
         }
 
         public static IConfigurationRoot CreateConfiguration(string environment)

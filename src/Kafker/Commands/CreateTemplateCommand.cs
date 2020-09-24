@@ -47,14 +47,13 @@ namespace Kafker.Commands
         private async Task CreateCfgTemplateAsync(string templateName)
         {
             var path = GetFilename(templateName, "cfg");
-            var templateObject = new KafkaTopicConfiguration
-            {
-                Brokers = new[] {"broker1"},
-                Topic = templateName,
-                EventsToRead = 100,
-                OffsetKind = OffsetKind.Latest
-            };
-            await File.WriteAllTextAsync(path, JsonConvert.SerializeObject(templateObject, Formatting.Indented));
+            const string template = @"{
+    Brokers = [""localhost:9092""],
+    Topic = ""topic-name"",
+    EventsToRead = 0|N,
+    OffsetKind = Latest|Earliest
+}";
+            await File.WriteAllTextAsync(path, template);
         }
 
         private string GetFilename(string templateName, string extension)

@@ -1,13 +1,11 @@
-﻿using System;
-using System.IO;
+﻿using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Confluent.Kafka;
 using Kafker.Configurations;
 using Kafker.Helpers;
+using Kafker.Kafka;
 using McMaster.Extensions.CommandLineUtils;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json.Linq;
 
 namespace Kafker.Commands
 {
@@ -15,39 +13,41 @@ namespace Kafker.Commands
     {
         private readonly IConsole _console;
         private readonly KafkerSettings _settings;
+        private readonly IProducerFactory _producerFactory;
 
-        public EmitCommand(IConsole console, IOptions<KafkerSettings> settings)
+        public EmitCommand(IConsole console, KafkerSettings settings, IProducerFactory producerFactory)
         {
             _console = console;
-            _settings = settings.Value;
+            _settings = settings;
+            _producerFactory = producerFactory;
         }
 
         public async Task<int> InvokeAsync(CancellationToken cancellationToken, string topic, string fileName)
         {
             var cfg = await ExtractorHelper.ReadConfigurationAsync(topic, _settings, _console);
-            var mapping = await ExtractorHelper.ReadMappingConfigurationAsync(topic, _settings, _console);
-
-            using var topicProducer = ExtractorHelper.CreateKafkaTopicProducer(cfg, _console);
-            var sourceCsvFile = new FileInfo(fileName);
-            var csvFileReader = ExtractorHelper.CreateCsvFileReader(sourceCsvFile, mapping, _console);
-
+            
             var producedEvents = 0;
+            using var topicProducer = _producerFactory.Create(cfg);
             try
             {
-                producedEvents = 0;
-                while (!cancellationToken.IsCancellationRequested)
+                var recordsBuffer = new RecordsBuffer(_console);
+                await recordsBuffer.LoadFromFileAsync(fileName);
+                var records = recordsBuffer.GetRecords();
+                
+                float total = records.Count();
+                float idx = 0;
+                foreach (var record in records)
                 {
-                    var json = await csvFileReader.ReadLineAsync(cancellationToken);
-                    if (json == null) break;
-                    
-                    await ExtractorHelper.ProduceAsync(topicProducer, cfg, json);
+                    if (cancellationToken.IsCancellationRequested) break;
+
+                    await topicProducer.ProduceAsync(record);
                     producedEvents++;
-                    await _console.Out.WriteAsync($".");
+                    await _console.Out.WriteAsync($"\rproduced {++idx / total * 100:f2}% [{idx:f0}/{total:f0}]");
                 }
             }
             finally
             {
-                await _console.Out.WriteLineAsync($"Produced {producedEvents} events"); 
+                await _console.Out.WriteLineAsync($"\r\nProduced {producedEvents} events"); 
             }
 
             return await Task.FromResult(0).ConfigureAwait(false); // ok
