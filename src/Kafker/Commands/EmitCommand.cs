@@ -1,13 +1,9 @@
-﻿using System;
-using System.IO;
-using System.Threading;
+﻿using System.Threading;
 using System.Threading.Tasks;
-using Confluent.Kafka;
 using Kafker.Configurations;
 using Kafker.Helpers;
 using McMaster.Extensions.CommandLineUtils;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json.Linq;
 
 namespace Kafker.Commands
 {
@@ -28,26 +24,20 @@ namespace Kafker.Commands
             var mapping = await ExtractorHelper.ReadMappingConfigurationAsync(topic, _settings, _console);
 
             using var topicProducer = ExtractorHelper.CreateKafkaTopicProducer(cfg, _console);
-            var sourceCsvFile = new FileInfo(fileName);
-            var flattenBuffer = ExtractorHelper.CreateFlattenBuffer();
-            await flattenBuffer.LoadFromFileAsync(sourceCsvFile);
 
             var producedEvents = 0;
             try
             {
-                producedEvents = 0;
-                var records = flattenBuffer.GetJsonRecords();
+                var recordsBuffer = new RecordsBuffer();
+                await recordsBuffer.LoadFromFileAsync(fileName);
+                var records = await recordsBuffer.GetJsonRecordsAsync(mapping);
                 foreach (var record in records)
                 {
                     if (cancellationToken.IsCancellationRequested) break;
 
                     await ExtractorHelper.ProduceAsync(topicProducer, cfg, record);
-
+                    producedEvents++;
                 }
-            }
-            catch (Exception er)
-            {
-                throw;
             }
             finally
             {

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Kafker.Commands;
 using Kafker.Configurations;
@@ -7,6 +8,8 @@ using Kafker.Helpers;
 using McMaster.Extensions.CommandLineUtils;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+
+[assembly:InternalsVisibleTo("Kafker.Tests")]
 
 namespace Kafker
 {

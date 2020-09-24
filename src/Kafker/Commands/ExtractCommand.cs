@@ -1,4 +1,5 @@
-﻿using System.Threading;
+﻿using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using Kafker.Configurations;
 using Kafker.Helpers;
@@ -27,15 +28,15 @@ namespace Kafker.Commands
             var mapping = await ExtractorHelper.ReadMappingConfigurationAsync(map ?? topic, _settings, _console);
 
             using var topicConsumer = ExtractorHelper.CreateKafkaTopicConsumer(cfg, _console);
-            var destinationCsvFile = ExtractorHelper.GetDestinationCsvFilename(topic, _settings, _fileTagProvider);
-            var flattenBuffer = ExtractorHelper.CreateFlattenBuffer();
-
+            var destinationCsvFile = GetDestinationCsvFilename(topic, _settings, _fileTagProvider);
+            
             var consumedEventsInTotal = 0;
             try
             {
                 var eventNumber = 0;
                 var totalEventsToRead = cfg.EventsToRead; // 0 - infinite
                 consumedEventsInTotal = 0;
+                var recordsBuffer = new RecordsBuffer();
                 while (!cancellationToken.IsCancellationRequested)
                 {
                     var consumeResult = topicConsumer.Consume(cancellationToken);
@@ -51,7 +52,7 @@ namespace Kafker.Commands
                     eventNumber++;
 
                     var json = JObject.Parse(consumeResult.Message.Value);
-                    flattenBuffer.Add(json);                    
+                    recordsBuffer.Add(json);                    
 
                     if (totalEventsToRead > 0)
                         await _console.Out.WriteLineAsync($"  processed {eventNumber}/{totalEventsToRead}");
@@ -62,7 +63,7 @@ namespace Kafker.Commands
                     if (totalEventsToRead > 0 && eventNumber >= totalEventsToRead)
                         break;
                 }
-                await flattenBuffer.SaveToFileAsync(destinationCsvFile);
+                await recordsBuffer.SaveToFileAsync(destinationCsvFile, mapping);
             }
             finally
             {
@@ -71,6 +72,14 @@ namespace Kafker.Commands
             }
 
             return await Task.FromResult(0).ConfigureAwait(false); // ok
+        }
+
+        internal static FileInfo GetDestinationCsvFilename(string topic, KafkerSettings setting, IFileTagProvider fileTagProvider)
+        {
+            var tag = fileTagProvider.GetTag();
+            var filePath = Path.Combine(setting.Destination, $"{topic}_{tag}.csv");
+            var fileInfo = new FileInfo(filePath);
+            return fileInfo;
         }
     }
 }
