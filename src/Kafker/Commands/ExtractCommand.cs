@@ -28,7 +28,7 @@ namespace Kafker.Commands
 
             using var topicConsumer = ExtractorHelper.CreateKafkaTopicConsumer(cfg, _console);
             var destinationCsvFile = ExtractorHelper.GetDestinationCsvFilename(topic, _settings, _fileTagProvider);
-            using var csvFileWriter = ExtractorHelper.CreateCsvFileWriter(destinationCsvFile, mapping, _console);
+            var flattenBuffer = ExtractorHelper.CreateFlattenBuffer();
 
             var consumedEventsInTotal = 0;
             try
@@ -51,7 +51,7 @@ namespace Kafker.Commands
                     eventNumber++;
 
                     var json = JObject.Parse(consumeResult.Message.Value);
-                    await csvFileWriter.WriteAsync(cancellationToken, json);
+                    flattenBuffer.Add(json);                    
 
                     if (totalEventsToRead > 0)
                         await _console.Out.WriteLineAsync($"  processed {eventNumber}/{totalEventsToRead}");
@@ -62,6 +62,7 @@ namespace Kafker.Commands
                     if (totalEventsToRead > 0 && eventNumber >= totalEventsToRead)
                         break;
                 }
+                await flattenBuffer.SaveToFileAsync(destinationCsvFile);
             }
             finally
             {

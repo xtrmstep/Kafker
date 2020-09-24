@@ -29,22 +29,25 @@ namespace Kafker.Commands
 
             using var topicProducer = ExtractorHelper.CreateKafkaTopicProducer(cfg, _console);
             var sourceCsvFile = new FileInfo(fileName);
-
-            using var csvFileReader = ExtractorHelper.CreateCsvFileReader(sourceCsvFile, mapping, _console);
+            var flattenBuffer = ExtractorHelper.CreateFlattenBuffer();
+            await flattenBuffer.LoadFromFileAsync(sourceCsvFile);
 
             var producedEvents = 0;
             try
             {
                 producedEvents = 0;
-                while (!cancellationToken.IsCancellationRequested)
+                var records = flattenBuffer.GetJsonRecords();
+                foreach (var record in records)
                 {
-                    var json = csvFileReader.ReadLine();
-                    if (json == null) break;
-                    
-                    await ExtractorHelper.ProduceAsync(topicProducer, cfg, json);
-                    producedEvents++;
-                    await _console.Out.WriteAsync($".");
+                    if (cancellationToken.IsCancellationRequested) break;
+
+                    await ExtractorHelper.ProduceAsync(topicProducer, cfg, record);
+
                 }
+            }
+            catch (Exception er)
+            {
+                throw;
             }
             finally
             {

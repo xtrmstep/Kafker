@@ -12,6 +12,7 @@
 
     <ItemGroup>
         <PackageReference Include="Confluent.Kafka" Version="1.5.1" />
+        <PackageReference Include="CSVLibraryAK" Version="1.1.2" />
         <PackageReference Include="JsonFlatten" Version="1.0.1" />
         <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="3.0.0" />
         <PackageReference Include="Microsoft.Extensions.Configuration" Version="3.1.8" />
