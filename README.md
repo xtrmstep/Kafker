@@ -45,7 +45,7 @@ Example of CFG file:
   "EventsToRead": 50,
   "OffsetKind": "Latest"
 }
-```  
+```
 
 ### JSON to CSV mapping
 
@@ -61,7 +61,7 @@ Example of MAP file:
     "file_field": "Json.Property[0].Name"
   }
 }
-``` 
+```
 
 ## Usage Examples
 
@@ -91,7 +91,7 @@ You can check which topic configurations you have:
 Now let's extract events from the topic:
 
 ```bash
-./kafker.exe extract -tn source-topic
+./kafker.exe extract -t source-topic
 ```
 
 This command will read those two CFG and MAP files, read certain number of events (press Ctrl+C to break the operation earlier if you need). When it's finished in the destination folder (defined in the `appsetting.json`) you'll find a CSV file. The name of the file will have topic's name and timestamp in its name (e.g., `source-topic_20200825_054112.csv`).
@@ -99,7 +99,7 @@ This command will read those two CFG and MAP files, read certain number of event
 Now let's send this file to another topic. You need to create a new template and update it with new information. If you're not specifying the mapping, JSON field in th Kafka event will be called same as in the file. The following command will read lines from file and emit them to Kafka topic.
 
 ```bash
-./kafker.exe emit -tn destination-topic c://csv_files/source-topic_20200825_054112.csv
-``` 
+./kafker.exe emit -t destination-topic c://csv_files/source-topic_20200825_054112.csv
+```
 
 That's it.

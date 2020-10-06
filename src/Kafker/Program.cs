@@ -47,7 +47,7 @@ namespace Kafker
             {
                 p.Description = "Extract a topic to CSV file using existing configuration";
                 
-                var topicArg = p.Option("-tn|--topicname <TOPICNAME>", "File name with topic configuration", CommandOptionType.SingleValue).IsRequired();
+                var topicArg = p.Option("-t|--topic <TOPIC>", "File name with topic configuration", CommandOptionType.SingleValue).IsRequired();
                 var mapArg = p.Option("-m|--map <MAP>", "File name of a file with mapping configuration", CommandOptionType.SingleValue);
 
                 p.OnExecuteAsync(async cancellationToken =>
@@ -61,7 +61,7 @@ namespace Kafker
             {
                 p.Description = "Create template CFG and MAP files";
                 
-                var nameArg = p.Option("-tn|--topicname <TOPICNAME>", "Template name", CommandOptionType.SingleValue);
+                var nameArg = p.Option("-t|--topic <TOPIC>", "Template name", CommandOptionType.SingleValue);
 
                 p.OnExecuteAsync(async cancellationToken =>
                 {
@@ -84,7 +84,7 @@ namespace Kafker
             {
                 p.Description = "Emit events to a topic using existing configuration";
                 
-                var topicArg = p.Option("-tn|--topicname <TOPICNAME>", "Topic name to which events should be emitted", CommandOptionType.SingleValue).IsRequired();
+                var topicArg = p.Option("-t|--topic <TOPIC>", "Topic name to which events should be emitted", CommandOptionType.SingleValue).IsRequired();
                 var fileName = p.Argument("file", "CSV file name with events").IsRequired();
 
                 p.OnExecuteAsync(async cancellationToken =>
