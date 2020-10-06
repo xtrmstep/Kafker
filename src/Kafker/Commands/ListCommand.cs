@@ -15,10 +15,10 @@ namespace Kafker.Commands
         private readonly IConsole _console;
         private readonly KafkerSettings _settings;
 
-        public ListCommand(IConsole console, IOptions<KafkerSettings> settings)
+        public ListCommand(IConsole console, KafkerSettings settings)
         {
             _console = console;
-            _settings = settings.Value;
+            _settings = settings;
         }
 
         public async Task<int> InvokeAsync()
