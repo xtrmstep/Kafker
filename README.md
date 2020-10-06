@@ -70,7 +70,7 @@ Let's read some topic and send extracted events to another topic. Before using t
 Create templates
 
 ```bash
-./kafker.exe create-template source-topic
+./kafker.exe create source-topic
 ```
 
 This command will create two files: `source-topic.cfg` and `source-topic.map`. In CFG file you need to specify Kafka broker(s) and exact topic name. Also you may specify number of events to read (`EventsToRead`) and other parameters. In MAP file you may want to specify a mapping. If there is no mapping, then all fields will be extracted. Let's extract all fields.

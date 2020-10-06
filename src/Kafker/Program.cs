@@ -57,7 +57,7 @@ namespace Kafker
                 });
             });
 
-            app.Command("create-template", p =>
+            app.Command("create", p =>
             {
                 p.Description = "Create template CFG and MAP files";
                 
