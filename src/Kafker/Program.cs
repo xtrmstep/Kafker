@@ -61,7 +61,7 @@ namespace Kafker
             {
                 p.Description = "Create template CFG and MAP files";
                 
-                var nameArg = p.Option("-n|--name <NAME>", "Template name", CommandOptionType.SingleValue);
+                var nameArg = p.Option("-t|--topic <TOPIC>", "Template name", CommandOptionType.SingleValue);
 
                 p.OnExecuteAsync(async cancellationToken =>
                 {

@@ -45,7 +45,7 @@ Example of CFG file:
   "EventsToRead": 50,
   "OffsetKind": "Latest"
 }
-```  
+```
 
 ### JSON to CSV mapping
 
@@ -61,7 +61,7 @@ Example of MAP file:
     "file_field": "Json.Property[0].Name"
   }
 }
-``` 
+```
 
 ## Usage Examples
 
@@ -100,6 +100,6 @@ Now let's send this file to another topic. You need to create a new template and
 
 ```bash
 ./kafker.exe emit -t destination-topic c://csv_files/source-topic_20200825_054112.csv
-``` 
+```
 
 That's it.
