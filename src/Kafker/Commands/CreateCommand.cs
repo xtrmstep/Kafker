@@ -10,7 +10,7 @@ using Newtonsoft.Json;
 
 namespace Kafker.Commands
 {
-    public class CreateCommand : ICreateTemplateCommand
+    public class CreateCommand : ICreateCommand
     {
         private readonly IConsole _console;
         private readonly KafkerSettings _settings;

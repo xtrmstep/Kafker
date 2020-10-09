@@ -30,7 +30,8 @@ namespace Kafker
                 .AddSingleton<IProducerFactory, ProducerFactory>()
                 .AddSingleton<IFileTagProvider, FileTagProvider>()
                 .AddSingleton<IExtractCommand, ExtractCommand>()
-                .AddSingleton<ICreateTemplateCommand, CreateCommand>()
+                .AddSingleton<ICreateCommand, CreateCommand>()
+                .AddSingleton<ICreateCommand, CreateCommand>()
                 .AddSingleton<IListCommand, ListCommand>()
                 .AddSingleton<IEmitCommand, EmitCommand>()
                 .AddSingleton(PhysicalConsole.Singleton)
@@ -68,7 +69,7 @@ namespace Kafker
 
                 p.OnExecuteAsync(async cancellationToken =>
                 {
-                    var createTemplateCommand = services.GetService<ICreateTemplateCommand>();
+                    var createTemplateCommand = services.GetService<ICreateCommand>();
                     return await createTemplateCommand.InvokeAsync(cancellationToken, nameArg.Value());
                 });
             });
