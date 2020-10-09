@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
@@ -9,6 +10,7 @@ using Kafker.Kafka;
 using McMaster.Extensions.CommandLineUtils;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 [assembly:InternalsVisibleTo("Kafker.Tests")]
 
@@ -22,12 +24,14 @@ namespace Kafker
             var configuration = CreateConfiguration(environment);
 
             var kafkerSettings = configuration.GetSection(nameof(KafkerSettings)).Get<KafkerSettings>();
+
             var services = new ServiceCollection()
                 .AddSingleton<IConsumerFactory, ConsumerFactory>()
                 .AddSingleton<IProducerFactory, ProducerFactory>()
                 .AddSingleton<IFileTagProvider, FileTagProvider>()
                 .AddSingleton<IExtractCommand, ExtractCommand>()
-                .AddSingleton<ICreateTemplateCommand, CreateTemplateCommand>()
+                .AddSingleton<ICreateCommand, CreateCommand>()
+                .AddSingleton<ICreateCommand, CreateCommand>()
                 .AddSingleton<IListCommand, ListCommand>()
                 .AddSingleton<IEmitCommand, EmitCommand>()
                 .AddSingleton(PhysicalConsole.Singleton)
@@ -65,7 +69,7 @@ namespace Kafker
 
                 p.OnExecuteAsync(async cancellationToken =>
                 {
-                    var createTemplateCommand = services.GetService<ICreateTemplateCommand>();
+                    var createTemplateCommand = services.GetService<ICreateCommand>();
                     return await createTemplateCommand.InvokeAsync(cancellationToken, nameArg.Value());
                 });
             });

@@ -11,6 +11,7 @@ namespace Kafker.Configurations
 
         [JsonConverter(typeof(StringEnumConverter))]
         public OffsetKind OffsetKind { get; set; } = OffsetKind.Latest;
+        
     }
 
     public enum OffsetKind
