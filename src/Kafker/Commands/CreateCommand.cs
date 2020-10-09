@@ -33,9 +33,7 @@ namespace Kafker.Commands
         private async Task CreateCfgMapTemplateAsync(string templateName)
         {
             var path = GetFilename(templateName, "cfg");
-            var brokerAddress = string.Join("\",\"", _settings.Brokers);
-            var brokerAddressCorrectFormat = "[\"" + brokerAddress + "\"]";
-            
+            var brokerAddress = $@"[""{string.Join("\",\"", _settings.Brokers)}""]";
             var template = @"{
     Brokers : {broker-address},
     Topic : ""topic-name"",
@@ -47,7 +45,7 @@ namespace Kafker.Commands
         ""destination_property_of_array_element"" : ""Node.Array[1]""   
         }
 }";
-            string templateWithConfig = template.Replace("{broker-address}", brokerAddressCorrectFormat);    
+            string templateWithConfig = template.Replace("{broker-address}", brokerAddress);    
             
             await File.WriteAllTextAsync(path, templateWithConfig);
             
