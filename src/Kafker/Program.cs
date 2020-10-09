@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
@@ -29,7 +30,7 @@ namespace Kafker
                 .AddSingleton<IProducerFactory, ProducerFactory>()
                 .AddSingleton<IFileTagProvider, FileTagProvider>()
                 .AddSingleton<IExtractCommand, ExtractCommand>()
-                .AddSingleton<ICreateTemplateCommand, CreateTemplateCommand>()
+                .AddSingleton<ICreateTemplateCommand, CreateCommand>()
                 .AddSingleton<IListCommand, ListCommand>()
                 .AddSingleton<IEmitCommand, EmitCommand>()
                 .AddSingleton(PhysicalConsole.Singleton)
