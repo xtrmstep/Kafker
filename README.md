@@ -43,7 +43,13 @@ Example of CFG file:
   ],
   "Topic": "my-topic",
   "EventsToRead": 50,
-  "OffsetKind": "Latest"
+  "OffsetKind": "Latest",
+  "Mapping" : {
+        "destination_property_name" : "Property",
+        "destination_property_of_nested_type" : "Node.Property",
+        "destination_property_of_array_element" : "Node.Array[1]"   
+        }
+    
 }
 ```
 
@@ -73,7 +79,7 @@ Create templates
 ./kafker.exe create source-topic
 ```
 
-This command will create two files: `source-topic.cfg` and `source-topic.map`. In CFG file you need to specify Kafka broker(s) and exact topic name. Also you may specify number of events to read (`EventsToRead`) and other parameters. In MAP file you may want to specify a mapping. If there is no mapping, then all fields will be extracted. Let's extract all fields.
+This command will create one file: `source-topic.cfg`. In CFG file you need to specify Kafka broker(s) and exact topic name. Also you may specify number of events to read (`EventsToRead`) and other parameters. In the map section you may want to specify a mapping. If there is no mapping, then all fields will be extracted. Let's extract all fields. 
 
 ```json
 {
