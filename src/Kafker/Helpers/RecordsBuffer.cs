@@ -52,7 +52,7 @@ namespace Kafker.Helpers
         public async Task SaveToFileAsync(FileInfo destinationCsvFile)
         {
             await Task.Yield();
-            //CSVLibraryAK.CSVLibraryAK.Export(sourceFile.FullName, _tbl);
+            //CSVLibraryAK.Core.CSVLibraryAK.Export(sourceFile.FullName, _tbl);
 
             await using var fs = File.CreateText(destinationCsvFile.FullName);
             float total = _buffer.Count;
@@ -89,7 +89,7 @@ namespace Kafker.Helpers
         public async Task LoadFromFileAsync(string sourceFile)
         {
             await Task.Yield();
-            //_tbl = CSVLibraryAK.CSVLibraryAK.Import(sourceFile, true);
+            //_tbl = CSVLibraryAK.Core.CSVLibraryAK.Import(sourceFile, true);
             var lines = await File.ReadAllLinesAsync(sourceFile);
             var idx = 0;
             foreach (var line in lines)
