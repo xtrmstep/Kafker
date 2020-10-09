@@ -10,12 +10,12 @@ using Newtonsoft.Json;
 
 namespace Kafker.Commands
 {
-    public class CreateTemplateCommand : ICreateTemplateCommand
+    public class CreateCommand : ICreateCommand
     {
         private readonly IConsole _console;
         private readonly KafkerSettings _settings;
         
-            public CreateTemplateCommand(IConsole console, KafkerSettings settings)
+            public CreateCommand(IConsole console, KafkerSettings settings)
         {
             _console = console;
             _settings = settings;
