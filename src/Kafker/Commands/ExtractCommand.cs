@@ -5,8 +5,6 @@ using Kafker.Configurations;
 using Kafker.Helpers;
 using Kafker.Kafka;
 using McMaster.Extensions.CommandLineUtils;
-using Microsoft.Extensions.Options;
-using Newtonsoft.Json.Linq;
 
 namespace Kafker.Commands
 {
@@ -16,20 +14,23 @@ namespace Kafker.Commands
         private readonly IFileTagProvider _fileTagProvider;
         private readonly IConsumerFactory _consumerFactory;
         private readonly KafkerSettings _settings;
+        private readonly IFileHandler _fileHandler;
 
-        public ExtractCommand(IConsole console, IFileTagProvider fileTagProvider, KafkerSettings settings, IConsumerFactory consumerFactory)
+        public ExtractCommand(IConsole console, IFileTagProvider fileTagProvider, KafkerSettings settings,
+            IConsumerFactory consumerFactory, IFileHandler fileHandler)
         {
             _console = console;
             _fileTagProvider = fileTagProvider;
             _consumerFactory = consumerFactory;
             _settings = settings;
+            _fileHandler = fileHandler;
         }
 
         public async Task<int> InvokeAsync(CancellationToken cancellationToken, string topic, string map)
         {
             var cfg = await ExtractorHelper.ReadConfigurationAsync(topic, _settings, _console);
             var destinationCsvFile = GetDestinationCsvFilename(topic, _settings, _fileTagProvider);
-            
+
             var totalNumberOfConsumedEvents = 0;
             using var topicConsumer = _consumerFactory.Create(cfg);
             try
@@ -37,7 +38,6 @@ namespace Kafker.Commands
                 var numberOfReadEvents = 0;
                 var totalEventsToRead = cfg.EventsToRead; // 0 - infinite
                 totalNumberOfConsumedEvents = 0;
-                var recordsBuffer = new RecordsBuffer(_console);
                 while (!cancellationToken.IsCancellationRequested)
                 {
                     var consumeResult = topicConsumer.Consume(cancellationToken);
@@ -51,7 +51,8 @@ namespace Kafker.Commands
                     }
 
                     numberOfReadEvents++;
-                    recordsBuffer.Add(consumeResult.Message.Timestamp, consumeResult.Message.Value);                    
+                    await _fileHandler.SaveToFileAsync(destinationCsvFile, consumeResult.Message.Timestamp,
+                        consumeResult.Message.Value);
 
                     if (totalEventsToRead > 0)
                         await _console.Out.WriteAsync($"\rloaded {numberOfReadEvents}/{totalEventsToRead}...");
@@ -62,7 +63,6 @@ namespace Kafker.Commands
                     if (totalEventsToRead > 0 && numberOfReadEvents >= totalEventsToRead)
                         break;
                 }
-                await recordsBuffer.SaveToFileAsync(destinationCsvFile);
             }
             finally
             {
@@ -72,7 +72,8 @@ namespace Kafker.Commands
             return await Task.FromResult(0).ConfigureAwait(false); // ok
         }
 
-        internal static FileInfo GetDestinationCsvFilename(string topic, KafkerSettings setting, IFileTagProvider fileTagProvider)
+        internal static FileInfo GetDestinationCsvFilename(string topic, KafkerSettings setting,
+            IFileTagProvider fileTagProvider)
         {
             var tag = fileTagProvider.GetTag();
             var filePath = Path.Combine(setting.Destination, $"{topic}_{tag}.csv");
