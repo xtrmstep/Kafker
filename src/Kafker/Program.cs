@@ -9,7 +9,6 @@ using Kafker.Kafka;
 using McMaster.Extensions.CommandLineUtils;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 
 [assembly:InternalsVisibleTo("Kafker.Tests")]
 
@@ -32,6 +31,7 @@ namespace Kafker
                 .AddSingleton<ICreateTemplateCommand, CreateTemplateCommand>()
                 .AddSingleton<IListCommand, ListCommand>()
                 .AddSingleton<IEmitCommand, EmitCommand>()
+                .AddScoped<IFileHandler, FileHandler>()
                 .AddSingleton(PhysicalConsole.Singleton)
                 .AddSingleton(kafkerSettings)
                 .BuildServiceProvider();
