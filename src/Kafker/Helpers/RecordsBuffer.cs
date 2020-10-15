@@ -22,7 +22,7 @@ namespace Kafker.Helpers
             _console = console;
         }
         
-        public void Add(Timestamp messageTimestamp, string json)
+        public void Add(Timestamp messageTimestamp, string json) 
         {
             var pair = new KeyValuePair<Timestamp,string>(messageTimestamp, json);
             _buffer.Add(pair);
@@ -47,23 +47,6 @@ namespace Kafker.Helpers
                 row[column] = dic[column];
             }
             _tbl.Rows.Add(row);
-        }
-
-        public async Task SaveToFileAsync(FileInfo destinationCsvFile)
-        {
-            await Task.Yield();
-            //CSVLibraryAK.CSVLibraryAK.Export(sourceFile.FullName, _tbl);
-
-            await using var fs = File.CreateText(destinationCsvFile.FullName);
-            float total = _buffer.Count;
-            float idx = 0;
-            foreach (var pair in _buffer)
-            {
-                await fs.WriteLineAsync($"\"{pair.Key.UnixTimestampMs}\"|\"{pair.Value}\"");
-                await _console.Out.WriteAsync($"\rstored {++idx / total * 100:f2}% [{idx:f0}/{total:f0}]");
-            }
-
-            await fs.FlushAsync();
         }
 
         public async Task<JObject[]> GetJsonRecordsAsync(TopicMappingConfiguration topicMappingConfiguration)
