@@ -33,23 +33,18 @@ namespace Kafker.Commands
             {
                 try
                 {
-                    float total = 0;
-                    float idx = 0;
                     string line;
                     while ((line = await reader.ReadLineAsync()) != null)
                     {
                         if (cancellationToken.IsCancellationRequested) break;
                         
                         var pair = line.Split("|");
-                        var timestamp = pair[0].Substring(1, pair[0].Length - 2);
-                        var record = pair[1].Substring(1, pair[1].Length - 2);
-                        idx++;
-                        await topicProducer.ProduceAsync(line);
+                        //var timestamp = pair[0].Substring(1, pair[0].Length - 2);
+                        var jsonText = pair[1].Substring(1, pair[1].Length - 2);
+                        await topicProducer.ProduceAsync(jsonText);
                         producedEvents++;
                     }
 
-                    await _console.Out.WriteAsync(
-                        $"\rproduced [{idx:f0}/{total:f0}]");
                 }
                 finally
                 {
