@@ -1,11 +1,12 @@
-﻿using System.Linq;
+﻿using System.Collections.Generic;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using Confluent.Kafka;
 using Kafker.Configurations;
 using Kafker.Helpers;
 using Kafker.Kafka;
 using McMaster.Extensions.CommandLineUtils;
-using Microsoft.Extensions.Options;
 
 namespace Kafker.Commands
 {
@@ -25,29 +26,30 @@ namespace Kafker.Commands
         public async Task<int> InvokeAsync(CancellationToken cancellationToken, string topic, string fileName)
         {
             var cfg = await ExtractorHelper.ReadConfigurationAsync(topic, _settings, _console);
-            
+
             var producedEvents = 0;
             using var topicProducer = _producerFactory.Create(cfg);
-            try
+            using (var reader = new StreamReader(fileName))
             {
-                var recordsBuffer = new RecordsBuffer(_console);
-                await recordsBuffer.LoadFromFileAsync(fileName);
-                var records = recordsBuffer.GetRecords();
-                
-                float total = records.Count();
-                float idx = 0;
-                foreach (var record in records)
+                try
                 {
-                    if (cancellationToken.IsCancellationRequested) break;
+                    string line;
+                    while ((line = await reader.ReadLineAsync()) != null)
+                    {
+                        if (cancellationToken.IsCancellationRequested) break;
+                        
+                        var pair = line.Split("|");
+                        //var timestamp = pair[0].Substring(1, pair[0].Length - 2);
+                        var jsonText = pair[1].Substring(1, pair[1].Length - 2);
+                        await topicProducer.ProduceAsync(jsonText);
+                        producedEvents++;
+                    }
 
-                    await topicProducer.ProduceAsync(record);
-                    producedEvents++;
-                    await _console.Out.WriteAsync($"\rproduced {++idx / total * 100:f2}% [{idx:f0}/{total:f0}]");
                 }
-            }
-            finally
-            {
-                await _console.Out.WriteLineAsync($"\r\nProduced {producedEvents} events"); 
+                finally
+                {
+                    await _console.Out.WriteLineAsync($"\r\nProduced {producedEvents} events");
+                }
             }
 
             return await Task.FromResult(0).ConfigureAwait(false); // ok

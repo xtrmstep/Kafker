@@ -10,7 +10,6 @@ using Kafker.Kafka;
 using McMaster.Extensions.CommandLineUtils;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 
 [assembly:InternalsVisibleTo("Kafker.Tests")]
 
