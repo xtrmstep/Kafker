@@ -10,12 +10,12 @@ using Newtonsoft.Json;
 
 namespace Kafker.Commands
 {
-    public class CreateTemplateCommand : ICreateTemplateCommand
+    public class CreateCommand : ICreateCommand
     {
         private readonly IConsole _console;
         private readonly KafkerSettings _settings;
         
-            public CreateTemplateCommand(IConsole console, KafkerSettings settings)
+            public CreateCommand(IConsole console, KafkerSettings settings)
         {
             _console = console;
             _settings = settings;
@@ -33,9 +33,9 @@ namespace Kafker.Commands
         private async Task CreateCfgMapTemplateAsync(string templateName)
         {
             var path = GetFilename(templateName, "cfg");
-            var brokerAddress = _settings.Brokers; 
+            var brokerAddress = $@"[""{string.Join("\",\"", _settings.Brokers)}""]";
             var template = @"{
-    Brokers : [""localhost:9092""],
+    Brokers : {broker-address},
     Topic : ""topic-name"",
     EventsToRead : ""0|N"",
     OffsetKind : ""Latest|Earliest"",
@@ -46,6 +46,7 @@ namespace Kafker.Commands
         }
 }";
             string templateWithConfig = template.Replace("{broker-address}", brokerAddress);    
+            
             await File.WriteAllTextAsync(path, templateWithConfig);
             
         }

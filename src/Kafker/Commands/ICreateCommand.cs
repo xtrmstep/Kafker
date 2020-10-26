@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 namespace Kafker.Commands
 {
-    public interface ICreateTemplateCommand
+    public interface ICreateCommand
     {
         Task<int> InvokeAsync(CancellationToken cancellationToken, string templateName);
     }

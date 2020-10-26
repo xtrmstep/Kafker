@@ -22,7 +22,7 @@ namespace Kafker.Helpers
             _console = console;
         }
         
-        public void Add(Timestamp messageTimestamp, string json) 
+        public void Add(Timestamp messageTimestamp, string json)
         {
             var pair = new KeyValuePair<Timestamp,string>(messageTimestamp, json);
             _buffer.Add(pair);
@@ -49,6 +49,23 @@ namespace Kafker.Helpers
             _tbl.Rows.Add(row);
         }
 
+        public async Task SaveToFileAsync(FileInfo destinationCsvFile)
+        {
+            await Task.Yield();
+            //CSVLibraryAK.Core.CSVLibraryAK.Export(sourceFile.FullName, _tbl);
+
+            await using var fs = File.CreateText(destinationCsvFile.FullName);
+            float total = _buffer.Count;
+            float idx = 0;
+            foreach (var pair in _buffer)
+            {
+                await fs.WriteLineAsync($"\"{pair.Key.UnixTimestampMs}\"|\"{pair.Value}\"");
+                await _console.Out.WriteAsync($"\rstored {++idx / total * 100:f2}% [{idx:f0}/{total:f0}]");
+            }
+
+            await fs.FlushAsync();
+        }
+
         public async Task<JObject[]> GetJsonRecordsAsync(TopicMappingConfiguration topicMappingConfiguration)
         {
             await Task.Yield();
@@ -72,7 +89,7 @@ namespace Kafker.Helpers
         public async Task LoadFromFileAsync(string sourceFile)
         {
             await Task.Yield();
-            //_tbl = CSVLibraryAK.CSVLibraryAK.Import(sourceFile, true);
+            //_tbl = CSVLibraryAK.Core.CSVLibraryAK.Import(sourceFile, true);
             var lines = await File.ReadAllLinesAsync(sourceFile);
             var idx = 0;
             foreach (var line in lines)

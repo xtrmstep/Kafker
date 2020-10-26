@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
@@ -28,7 +29,8 @@ namespace Kafker
                 .AddSingleton<IProducerFactory, ProducerFactory>()
                 .AddSingleton<IFileTagProvider, FileTagProvider>()
                 .AddSingleton<IExtractCommand, ExtractCommand>()
-                .AddSingleton<ICreateTemplateCommand, CreateTemplateCommand>()
+                .AddSingleton<ICreateCommand, CreateCommand>()
+                .AddSingleton<ICreateCommand, CreateCommand>()
                 .AddSingleton<IListCommand, ListCommand>()
                 .AddSingleton<IEmitCommand, EmitCommand>()
                 .AddScoped<IFileHandler, FileHandler>()
@@ -67,7 +69,7 @@ namespace Kafker
 
                 p.OnExecuteAsync(async cancellationToken =>
                 {
-                    var createTemplateCommand = services.GetService<ICreateTemplateCommand>();
+                    var createTemplateCommand = services.GetService<ICreateCommand>();
                     return await createTemplateCommand.InvokeAsync(cancellationToken, nameArg.Value());
                 });
             });
