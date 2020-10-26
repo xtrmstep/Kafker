@@ -10,10 +10,11 @@ namespace Kafker.Helpers
     public class FileHandler : IFileHandler
     {
         private readonly IConsole _console;
-
+        
         public FileHandler(IConsole console)
         {
             _console = console;
+            
         }
 
         public async Task SaveToFileAsync(FileInfo destinationCsvFile, Timestamp messageTimeStamp, string messageValue)
@@ -22,6 +23,7 @@ namespace Kafker.Helpers
             await using var fileStream = new FileStream(destinationCsvFile.FullName, FileMode.Append, FileAccess.Write);
             await using var streamWriter = new StreamWriter(fileStream);
             await streamWriter.WriteLineAsync($"\"{messageTimeStamp.UnixTimestampMs}\"|\"{messageValue}\"");
+            streamWriter.Close();
         }
 
         public async Task<IEnumerable<string>> LoadFromFileAsync(string sourceFile)
