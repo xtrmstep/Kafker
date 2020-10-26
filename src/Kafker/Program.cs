@@ -33,7 +33,6 @@ namespace Kafker
                 .AddSingleton<ICreateCommand, CreateCommand>()
                 .AddSingleton<IListCommand, ListCommand>()
                 .AddSingleton<IEmitCommand, EmitCommand>()
-                .AddScoped<IFileHandler, FileHandler>()
                 .AddSingleton(PhysicalConsole.Singleton)
                 .AddSingleton(kafkerSettings)
                 .BuildServiceProvider();

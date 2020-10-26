@@ -14,16 +14,14 @@ namespace Kafker.Commands
         private readonly IFileTagProvider _fileTagProvider;
         private readonly IConsumerFactory _consumerFactory;
         private readonly KafkerSettings _settings;
-        private readonly IFileHandler _fileHandler;
 
         public ExtractCommand(IConsole console, IFileTagProvider fileTagProvider, KafkerSettings settings,
-            IConsumerFactory consumerFactory, IFileHandler fileHandler)
+            IConsumerFactory consumerFactory)
         {
             _console = console;
             _fileTagProvider = fileTagProvider;
             _consumerFactory = consumerFactory;
             _settings = settings;
-            _fileHandler = fileHandler;
         }
 
         public async Task<int> InvokeAsync(CancellationToken cancellationToken, string topic, string map)
@@ -33,6 +31,8 @@ namespace Kafker.Commands
 
             var totalNumberOfConsumedEvents = 0;
             using var topicConsumer = _consumerFactory.Create(cfg);
+            await using var fileStream = new FileStream(destinationCsvFile.FullName, FileMode.Append, FileAccess.Write);
+            await using var streamWriter = new StreamWriter(fileStream);
             try
             {
                 var numberOfReadEvents = 0;
@@ -51,8 +51,8 @@ namespace Kafker.Commands
                     }
 
                     numberOfReadEvents++;
-                    await _fileHandler.SaveToFileAsync(destinationCsvFile, consumeResult.Message.Timestamp,
-                        consumeResult.Message.Value);
+                    await streamWriter.WriteLineAsync($"\"{consumeResult.Message.Timestamp.UnixTimestampMs}\"|\"{consumeResult.Message.Value}\"");
+                   
 
                     if (totalEventsToRead > 0)
                         await _console.Out.WriteAsync($"\rloaded {numberOfReadEvents}/{totalEventsToRead}...");
@@ -64,11 +64,11 @@ namespace Kafker.Commands
                         break;
                 }
             }
+                    
             finally
             {
                 await _console.Out.WriteLineAsync($"\n\rConsumed {totalNumberOfConsumedEvents} events");
             }
-
             return await Task.FromResult(0).ConfigureAwait(false); // ok
         }
 

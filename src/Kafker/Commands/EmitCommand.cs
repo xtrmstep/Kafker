@@ -1,5 +1,8 @@
-﻿using System.Threading;
+﻿using System.Collections.Generic;
+using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
+using Confluent.Kafka;
 using Kafker.Configurations;
 using Kafker.Helpers;
 using Kafker.Kafka;
@@ -12,16 +15,12 @@ namespace Kafker.Commands
         private readonly IConsole _console;
         private readonly KafkerSettings _settings;
         private readonly IProducerFactory _producerFactory;
-        private readonly IFileHandler _fileHandler;
 
-        
-        public EmitCommand(IConsole console, KafkerSettings settings, IProducerFactory producerFactory,
-                            IFileHandler fileHandler)
+        public EmitCommand(IConsole console, KafkerSettings settings, IProducerFactory producerFactory)
         {
             _console = console;
             _settings = settings;
             _producerFactory = producerFactory;
-            _fileHandler = fileHandler;
         }
 
         public async Task<int> InvokeAsync(CancellationToken cancellationToken, string topic, string fileName)
@@ -30,24 +29,32 @@ namespace Kafker.Commands
 
             var producedEvents = 0;
             using var topicProducer = _producerFactory.Create(cfg);
-            try
+            using (var reader = new StreamReader(fileName))
             {
-                var result = await _fileHandler.LoadFromFileAsync(fileName);
-
-                float total = 0;
-                float idx = 0;
-                foreach (var record in result)
+                try
                 {
-                    if (cancellationToken.IsCancellationRequested) break;
+                    float total = 0;
+                    float idx = 0;
+                    string line;
+                    while ((line = await reader.ReadLineAsync()) != null)
+                    {
+                        if (cancellationToken.IsCancellationRequested) break;
+                        
+                        var pair = line.Split("|");
+                        var timestamp = pair[0].Substring(1, pair[0].Length - 2);
+                        var record = pair[1].Substring(1, pair[1].Length - 2);
+                        idx++;
+                        await topicProducer.ProduceAsync(line);
+                        producedEvents++;
+                    }
 
-                    await topicProducer.ProduceAsync(record);
-                    producedEvents++;
-                    await _console.Out.WriteAsync($"\rproduced {++idx / total * 100:f2}% [{idx:f0}/{total:f0}]");
+                    await _console.Out.WriteAsync(
+                        $"\rproduced [{idx:f0}/{total:f0}]");
                 }
-            }
-            finally
-            {
-                await _console.Out.WriteLineAsync($"\r\nProduced {producedEvents} events");
+                finally
+                {
+                    await _console.Out.WriteLineAsync($"\r\nProduced {producedEvents} events");
+                }
             }
 
             return await Task.FromResult(0).ConfigureAwait(false); // ok
