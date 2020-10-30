@@ -40,20 +40,20 @@ namespace Kafker.Commands
             return await Task.FromResult(0).ConfigureAwait(false);
         }
 
-        private async Task CreateMapTemplateAsync(string templateName)
-        {
-            var path = GetFilename(templateName, "map");
-            var templateObject = new TopicMappingConfiguration
-            {
-                Mapping = new Dictionary<string, string>
-                {
-                    {"destination_property_name", "Property"},
-                    {"destination_property_of_nested_type", "Node.Property"},
-                    {"destination_property_of_array_element", "Node.Array[1]"}
-                }
-            };
-            await File.WriteAllTextAsync(path, JsonConvert.SerializeObject(templateObject, Formatting.Indented));
-        }
+        // private async Task CreateMapTemplateAsync(string templateName)
+        // {
+        //     var path = GetFilename(templateName, "map");
+        //     var templateObject = new TopicMappingConfiguration
+        //     {
+        //         Mapping = new Dictionary<string, string>
+        //         {
+        //             {"destination_property_name", "Property"},
+        //             {"destination_property_of_nested_type", "Node.Property"},
+        //             {"destination_property_of_array_element", "Node.Array[1]"}
+        //         }
+        //     };
+        //     await File.WriteAllTextAsync(path, JsonConvert.SerializeObject(templateObject, Formatting.Indented));
+        // }
 
         private async Task CreateCfgTemplateAsync(string templateName)
         {

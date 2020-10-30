@@ -17,7 +17,6 @@ namespace Kafker.Kafka
         /// <inheritdoc />
         public RecordsConsumer Create(KafkaTopicConfiguration config)
         {
-
             var rc = new RecordsConsumer(_console, config);
             rc.Subscribe();
             return rc;

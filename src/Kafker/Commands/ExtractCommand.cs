@@ -76,7 +76,7 @@ namespace Kafker.Commands
             IFileTagProvider fileTagProvider)
         {
             var tag = fileTagProvider.GetTag();
-            var filePath = Path.Combine(setting.Destination, $"{topic}_{tag}.csv");
+            var filePath = Path.Combine(setting.Destination, $"{topic}_{tag}.dat");
             var fileInfo = new FileInfo(filePath);
             return fileInfo;
         }

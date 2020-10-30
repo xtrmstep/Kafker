@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
@@ -30,7 +29,7 @@ namespace Kafker
                 .AddSingleton<IFileTagProvider, FileTagProvider>()
                 .AddSingleton<IExtractCommand, ExtractCommand>()
                 .AddSingleton<ICreateCommand, CreateCommand>()
-                .AddSingleton<ICreateCommand, CreateCommand>()
+                .AddSingleton<IConvertCommand, ConvertCommand>()
                 .AddSingleton<IListCommand, ListCommand>()
                 .AddSingleton<IEmitCommand, EmitCommand>()
                 .AddSingleton(PhysicalConsole.Singleton)
@@ -97,6 +96,20 @@ namespace Kafker
                 });
             });
 
+            app.Command("convert", p =>
+            {
+                p.Description = "Convert json snapshot to a datatable";
+                
+                var topicArg = p.Option("-t|--topic <TOPIC>", "File name with topic configuration", CommandOptionType.SingleValue).IsRequired();
+                var fileName = p.Argument("file", "CSV file name with events").IsRequired();    
+                    
+                p.OnExecuteAsync(async cancellationToken =>
+                {
+                    var convertCommand = services.GetService<IConvertCommand>();
+                    return await convertCommand.InvokeAsync(cancellationToken, fileName.Value,topicArg.Value());
+                });
+            });
+            
             app.OnExecuteAsync(async cancellationToken =>
             {
                 await PhysicalConsole.Singleton.Error.WriteLineAsync("Specify a command");

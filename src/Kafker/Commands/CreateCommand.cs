@@ -1,12 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
+﻿using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Kafker.Configurations;
 using McMaster.Extensions.CommandLineUtils;
-using Microsoft.Extensions.Options;
-using Newtonsoft.Json;
 
 namespace Kafker.Commands
 {
