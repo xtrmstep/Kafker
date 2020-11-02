@@ -30,20 +30,21 @@ namespace Kafker.Helpers
             // add missing columns
             foreach (var column in columns)
             {
-                var mapNotNullAndKeyExists = _mapConfig.Mapping != null && _mapConfig.Mapping.ContainsKey(column);
+                var mapNotNullAndKeyExists = _mapConfig.Mapping.Any() && _mapConfig.Mapping.ContainsKey(column);
                 var renamedColumnName = column;
                 if (mapNotNullAndKeyExists)
                 {
                     renamedColumnName = _mapConfig.Mapping[column];
                 }
 
-                if (_tbl.Columns.Contains(renamedColumnName)) continue;
+                if (!_tbl.Columns.Contains(renamedColumnName))
+                {
+                    var shouldAddColumn = !_mapConfig.Mapping.Any() || mapNotNullAndKeyExists;
+                    if (!shouldAddColumn) continue;
 
-                var shouldAddColumn = _mapConfig.Mapping == null || mapNotNullAndKeyExists;
-                if (!shouldAddColumn) continue;
-
-                var dataColumn = new DataColumn(renamedColumnName, typeof(object));
-                _tbl.Columns.Add(dataColumn);
+                    var dataColumn = new DataColumn(renamedColumnName, typeof(object));
+                    _tbl.Columns.Add(dataColumn);
+                }
 
                 row[renamedColumnName] = dic[column];
             }
