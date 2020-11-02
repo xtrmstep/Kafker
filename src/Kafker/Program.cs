@@ -49,12 +49,12 @@ namespace Kafker
             {
                 p.Description = "Extract a topic events to a snapshot (.DAT) file";
                 
-                var topicArg = p.Option("-t|--topic <TOPIC>", "A name of topic configuration", CommandOptionType.SingleValue).IsRequired();
+                var topicArg = p.Option("-t|--topic <TOPIC>", "File name with topic configuration", CommandOptionType.SingleValue).IsRequired();
 
                 p.OnExecuteAsync(async cancellationToken =>
                 {
                     var extractCommand = services.GetService<IExtractCommand>();
-                    return await extractCommand.InvokeAsync(cancellationToken, topicArg.Value(), mapArg.Value());
+                    return await extractCommand.InvokeAsync(cancellationToken, topicArg.Value());
                 });
             });
 
