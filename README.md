@@ -21,8 +21,7 @@ The simplest command to extract a topic to CSV file is as follows:
 
 This command relies on existing configuration with name `topic`. It will produce a file `topic-<date>-<time>.csv` with serialized events in table form. The configuration should be located in working folder or current folder and consists of following artifacts:
 
-- `topic.cfg` - a file with information about Kafka broker endpoints and topic name, offset and other parameters (see below) 
-- `topic.map` - a file with information about mapping for this topic
+- `topic.cfg` - a file with information about Kafka broker endpoints and topic name, offset and other parameters (see below) additionally information about mapping for this topic.
 
 #### Parameters
 
@@ -45,9 +44,9 @@ Example of CFG file:
   "EventsToRead": 50,
   "OffsetKind": "Latest",
   "Mapping" : {
-        "destination_property_name" : "Property",
-        "destination_property_of_nested_type" : "Node.Property",
-        "destination_property_of_array_element" : "Node.Array[1]"   
+        "Property" : "destination_property_name",
+        "Node.Property" : "destination_property_of_nested_type",
+        "Node.Array[1]" : "destination_property_of_array_element"   
         }
     
 }
@@ -100,12 +99,21 @@ Now let's extract events from the topic:
 ./kafker.exe extract -t source-topic
 ```
 
-This command will read those two CFG and MAP files, read certain number of events (press Ctrl+C to break the operation earlier if you need). When it's finished in the destination folder (defined in the `appsetting.json`) you'll find a CSV file. The name of the file will have topic's name and timestamp in its name (e.g., `source-topic_20200825_054112.csv`).
+This command will read the config file, read certain number of events (press Ctrl+C to break the operation earlier if you need). When it's finished in the destination folder (defined in the `appsetting.json`) you'll find a DAT file. The name of the file will have topic's name and timestamp in its name (e.g., `source-topic_20200825_054112.dat`).
 
-Now let's send this file to another topic. You need to create a new template and update it with new information. If you're not specifying the mapping, JSON field in th Kafka event will be called same as in the file. The following command will read lines from file and emit them to Kafka topic.
+
+
+Let's convert produced snapshots from Kafka topics to CVS files.
+
+./kafker.exe convert -t topic c://csv_files/source-topic_20200825_054112.dat
+
+This command will read the dat file and create a CSV file. If mappings are specified the produced csv file will convert only them if not, it will convert all the information in the dat file. 
+
+Now let's send this file to another topic. You need to create a new template and update it with new information. If you're not specifying the mapping, JSON field in the Kafka event will be called same as in the file. The following command will read lines from file and emit them to Kafka topic.
 
 ```bash
 ./kafker.exe emit -t destination-topic c://csv_files/source-topic_20200825_054112.csv
 ```
 
 That's it.
+
