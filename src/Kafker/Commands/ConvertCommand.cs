@@ -23,7 +23,7 @@ namespace Kafker.Commands
             var cfg = await ExtractorHelper.ReadConfigurationAsync(topic, _settings, _console);
             try
             {
-                var csvConverter = new SnapshotCsvConverter(_console,cfg);
+                var csvConverter = new SnapshotCsvConverter(_console,cfg,_settings);
                 await csvConverter.ConvertAndSaveAsync(fileName);
         
             }

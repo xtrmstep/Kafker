@@ -15,11 +15,13 @@ namespace Kafker.Helpers
         private readonly IConsole _console;
         private DataTable _tbl = new DataTable();
         private readonly KafkaTopicConfiguration _mapConfig;
+        private readonly KafkerSettings _settings;
 
-        public SnapshotCsvConverter(IConsole console, KafkaTopicConfiguration mapConfig)
+        public SnapshotCsvConverter(IConsole console, KafkaTopicConfiguration mapConfig, KafkerSettings settings)
         {
             _console = console;
             _mapConfig = mapConfig;
+            _settings = settings;
         }
 
         private void Convert(JObject json)
@@ -86,9 +88,16 @@ namespace Kafker.Helpers
         public async Task ConvertAndSaveAsync(string fileName)
         {
             var sourceFile = fileName;
+            var path = Path.Combine(_settings.ConfigurationFolder, fileName);
+            if (!File.Exists(path))
+            {
+                await _console.Error.WriteLineAsync($"File not found: {path}");
+            }
+            
             var destinationFile = new FileInfo($"{sourceFile.Replace(".dat", "")}.csv");
-            await LoadFromFileAsync(fileName);
+            await LoadFromFileAsync(path);
             await SaveToFileAsync(destinationFile);
         }
+
     }
 }
