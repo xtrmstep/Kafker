@@ -87,17 +87,23 @@ namespace Kafker.Helpers
 
         public async Task ConvertAndSaveAsync(string fileName)
         {
-            var sourceFile = fileName;
-            var path = Path.Combine(_settings.ConfigurationFolder, fileName);
-            if (!File.Exists(path))
+            var loadFile = Path.Combine(_settings.ConfigurationFolder, fileName);
+            var destinationFile = new FileInfo($"{loadFile.Replace(".dat", "")}.csv");
+            var currentFolder = Path.Combine(Directory.GetCurrentDirectory(), fileName);
+
+            if (File.Exists(currentFolder))
             {
-                await _console.Error.WriteLineAsync($"File not found: {path}");
+                
+                destinationFile = new FileInfo($"{currentFolder.Replace(".dat", "")}.csv");
+                loadFile = currentFolder;
+            }
+            else
+            {
+                await _console.Error.WriteLineAsync($"File not found in the current directory {currentFolder}:");
             }
 
-            var destinationFile = new FileInfo($"{path.Replace(".dat", "")}.csv");
-            await LoadFromFileAsync(path);
+            await LoadFromFileAsync(loadFile);
             await SaveToFileAsync(destinationFile);
         }
-
     }
 }
