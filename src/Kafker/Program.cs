@@ -62,7 +62,7 @@ namespace Kafker
             {
                 p.Description = "Create a template topic configuration file";
                 
-                var nameArg = p.Option("-t|--topic <TOPIC>", "Template name", CommandOptionType.SingleValue);
+                var nameArg = p.Option("-t|--topic <TOPIC>", "Name of a topic configuration", CommandOptionType.SingleValue);
 
                 p.OnExecuteAsync(async cancellationToken =>
                 {
