@@ -93,8 +93,8 @@ namespace Kafker.Helpers
             {
                 await _console.Error.WriteLineAsync($"File not found: {path}");
             }
-            
-            var destinationFile = new FileInfo($"{sourceFile.Replace(".dat", "")}.csv");
+
+            var destinationFile = new FileInfo($"{path.Replace(".dat", "")}.csv");
             await LoadFromFileAsync(path);
             await SaveToFileAsync(destinationFile);
         }
