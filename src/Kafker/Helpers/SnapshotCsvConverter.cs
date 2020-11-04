@@ -5,23 +5,18 @@ using System.Linq;
 using System.Threading.Tasks;
 using JsonFlatten;
 using Kafker.Configurations;
-using McMaster.Extensions.CommandLineUtils;
 using Newtonsoft.Json.Linq;
 
 namespace Kafker.Helpers
 {
     public class SnapshotCsvConverter
     {
-        private readonly IConsole _console;
         private DataTable _tbl = new DataTable();
         private readonly KafkaTopicConfiguration _mapConfig;
-        private readonly KafkerSettings _settings;
 
-        public SnapshotCsvConverter(IConsole console, KafkaTopicConfiguration mapConfig, KafkerSettings settings)
+        public SnapshotCsvConverter(KafkaTopicConfiguration mapConfig)
         {
-            _console = console;
             _mapConfig = mapConfig;
-            _settings = settings;
         }
 
         private void Convert(JObject json)
@@ -87,23 +82,10 @@ namespace Kafker.Helpers
 
         public async Task ConvertAndSaveAsync(string fileName)
         {
-            var loadFile = Path.Combine(_settings.ConfigurationFolder, fileName);
-            var destinationFile = new FileInfo($"{loadFile.Replace(".dat", "")}.csv");
-            var currentFolder = Path.Combine(Directory.GetCurrentDirectory(), fileName);
-
-            if (File.Exists(currentFolder))
-            {
-                
-                destinationFile = new FileInfo($"{currentFolder.Replace(".dat", "")}.csv");
-                loadFile = currentFolder;
-            }
-            else
-            {
-                await _console.Error.WriteLineAsync($"File not found in the current directory {currentFolder}:");
-            }
-
-            await LoadFromFileAsync(loadFile);
+            var destinationFile = new FileInfo($"{fileName.Replace(".dat", "")}.csv");
+            await LoadFromFileAsync(fileName);
             await SaveToFileAsync(destinationFile);
+
         }
     }
 }
