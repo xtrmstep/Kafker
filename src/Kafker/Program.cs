@@ -47,23 +47,22 @@ namespace Kafker
 
             app.Command("extract", p =>
             {
-                p.Description = "Extract a topic to CSV file using existing configuration";
+                p.Description = "Extract a topic events to a snapshot (.DAT) file";
                 
                 var topicArg = p.Option("-t|--topic <TOPIC>", "File name with topic configuration", CommandOptionType.SingleValue).IsRequired();
-                var mapArg = p.Option("-m|--map <MAP>", "File name of a file with mapping configuration", CommandOptionType.SingleValue);
 
                 p.OnExecuteAsync(async cancellationToken =>
                 {
                     var extractCommand = services.GetService<IExtractCommand>();
-                    return await extractCommand.InvokeAsync(cancellationToken, topicArg.Value(), mapArg.Value());
+                    return await extractCommand.InvokeAsync(cancellationToken, topicArg.Value());
                 });
             });
 
             app.Command("create", p =>
             {
-                p.Description = "Create template CFG and MAP files";
+                p.Description = "Create a template topic configuration file";
                 
-                var nameArg = p.Option("-t|--topic <TOPIC>", "Template name", CommandOptionType.SingleValue);
+                var nameArg = p.Option("-t|--topic <TOPIC>", "Name of a topic configuration", CommandOptionType.SingleValue);
 
                 p.OnExecuteAsync(async cancellationToken =>
                 {
@@ -84,10 +83,10 @@ namespace Kafker
             
             app.Command("emit", p =>
             {
-                p.Description = "Emit events to a topic using existing configuration";
+                p.Description = "Emit events from a given snapshot file (.DAT)";
                 
                 var topicArg = p.Option("-t|--topic <TOPIC>", "Topic name to which events should be emitted", CommandOptionType.SingleValue).IsRequired();
-                var fileName = p.Argument("file", "CSV file name with events").IsRequired();
+                var fileName = p.Argument("file", "Relative or absolute path to a DAT file with topic snapshot").IsRequired();
 
                 p.OnExecuteAsync(async cancellationToken =>
                 {
@@ -98,10 +97,10 @@ namespace Kafker
 
             app.Command("convert", p =>
             {
-                p.Description = "Convert json snapshot to a datatable";
+                p.Description = "Convert JSON snapshot to a CSV file";
                 
                 var topicArg = p.Option("-t|--topic <TOPIC>", "File name with topic configuration", CommandOptionType.SingleValue).IsRequired();
-                var fileName = p.Argument("file", "CSV file name with events").IsRequired();    
+                var fileName = p.Argument("file", "Relative or absolute path to a DAT file with topic snapshot").IsRequired();    
                     
                 p.OnExecuteAsync(async cancellationToken =>
                 {

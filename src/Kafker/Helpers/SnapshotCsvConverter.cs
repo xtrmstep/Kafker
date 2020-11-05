@@ -5,20 +5,17 @@ using System.Linq;
 using System.Threading.Tasks;
 using JsonFlatten;
 using Kafker.Configurations;
-using McMaster.Extensions.CommandLineUtils;
 using Newtonsoft.Json.Linq;
 
 namespace Kafker.Helpers
 {
     public class SnapshotCsvConverter
     {
-        private readonly IConsole _console;
         private DataTable _tbl = new DataTable();
         private readonly KafkaTopicConfiguration _mapConfig;
 
-        public SnapshotCsvConverter(IConsole console, KafkaTopicConfiguration mapConfig)
+        public SnapshotCsvConverter(KafkaTopicConfiguration mapConfig)
         {
-            _console = console;
             _mapConfig = mapConfig;
         }
 
@@ -30,20 +27,21 @@ namespace Kafker.Helpers
             // add missing columns
             foreach (var column in columns)
             {
-                var mapNotNullAndKeyExists = _mapConfig.Mapping != null && _mapConfig.Mapping.ContainsKey(column);
+                var mapNotNullAndKeyExists = _mapConfig.Mapping.Any() && _mapConfig.Mapping.ContainsKey(column);
                 var renamedColumnName = column;
                 if (mapNotNullAndKeyExists)
                 {
                     renamedColumnName = _mapConfig.Mapping[column];
                 }
 
-                if (_tbl.Columns.Contains(renamedColumnName)) continue;
+                if (!_tbl.Columns.Contains(renamedColumnName))
+                {
+                    var shouldAddColumn = !_mapConfig.Mapping.Any() || mapNotNullAndKeyExists;
+                    if (!shouldAddColumn) continue;
 
-                var shouldAddColumn = _mapConfig.Mapping == null || mapNotNullAndKeyExists;
-                if (!shouldAddColumn) continue;
-
-                var dataColumn = new DataColumn(renamedColumnName, typeof(object));
-                _tbl.Columns.Add(dataColumn);
+                    var dataColumn = new DataColumn(renamedColumnName, typeof(object));
+                    _tbl.Columns.Add(dataColumn);
+                }
 
                 row[renamedColumnName] = dic[column];
             }
@@ -84,10 +82,10 @@ namespace Kafker.Helpers
 
         public async Task ConvertAndSaveAsync(string fileName)
         {
-            var sourceFile = fileName;
-            var destinationFile = new FileInfo($"{sourceFile.Replace(".dat", "")}.csv");
+            var destinationFile = new FileInfo($"{fileName.Replace(".dat", "")}.csv");
             await LoadFromFileAsync(fileName);
             await SaveToFileAsync(destinationFile);
+
         }
     }
 }
