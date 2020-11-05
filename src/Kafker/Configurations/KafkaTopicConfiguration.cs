@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using System.Collections.Generic;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 
 namespace Kafker.Configurations
@@ -11,6 +12,8 @@ namespace Kafker.Configurations
 
         [JsonConverter(typeof(StringEnumConverter))]
         public OffsetKind OffsetKind { get; set; } = OffsetKind.Latest;
+        
+        public IDictionary<string, string> Mapping { get; set; } = new Dictionary<string, string>();
         
     }
 

@@ -24,7 +24,7 @@ namespace Kafker.Commands
             _settings = settings;
         }
 
-        public async Task<int> InvokeAsync(CancellationToken cancellationToken, string topic, string map)
+        public async Task<int> InvokeAsync(CancellationToken cancellationToken, string topic)
         {
             var cfg = await ExtractorHelper.ReadConfigurationAsync(topic, _settings, _console);
             var destinationCsvFile = GetDestinationCsvFilename(topic, _settings, _fileTagProvider);
@@ -76,7 +76,7 @@ namespace Kafker.Commands
             IFileTagProvider fileTagProvider)
         {
             var tag = fileTagProvider.GetTag();
-            var filePath = Path.Combine(setting.Destination, $"{topic}_{tag}.csv");
+            var filePath = Path.Combine(setting.Destination, $"{topic}_{tag}.dat");
             var fileInfo = new FileInfo(filePath);
             return fileInfo;
         }

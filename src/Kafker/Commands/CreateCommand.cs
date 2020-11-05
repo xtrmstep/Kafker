@@ -1,12 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
+﻿using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Kafker.Configurations;
 using McMaster.Extensions.CommandLineUtils;
-using Microsoft.Extensions.Options;
-using Newtonsoft.Json;
 
 namespace Kafker.Commands
 {
@@ -40,9 +36,9 @@ namespace Kafker.Commands
     EventsToRead : ""0|N"",
     OffsetKind : ""Latest|Earliest"",
     Mapping : {
-        ""destination_property_name"" : ""Property"",
-        ""destination_property_of_nested_type"" : ""Node.Property"",
-        ""destination_property_of_array_element"" : ""Node.Array[1]""   
+        ""Property"" : ""destination_property_name"",
+        ""Node.Property"" : ""destination_property_of_nested_type"",
+        ""Node.Array[1]"" : ""destination_property_of_array_element""   
         }
 }";
             string templateWithConfig = template.Replace("{broker-address}", brokerAddress);    
