@@ -30,17 +30,18 @@ namespace Kafker.Commands
         {
             var path = GetFilename(templateName, "cfg");
             var brokerAddress = $@"[""{string.Join("\",\"", _settings.Brokers)}""]";
-            var template = @"{
-    Brokers : {broker-address},
+            var eventsToRead = $@"0|N";
+            var template = $@"{{
+    Brokers : {{broker-address}},
     Topic : ""topic-name"",
-    EventsToRead : ""0|N"",
+    EventsToRead : {eventsToRead},
     OffsetKind : ""Latest|Earliest"",
-    Mapping : {
+    Mapping : {{
         ""Property"" : ""destination_property_name"",
         ""Node.Property"" : ""destination_property_of_nested_type"",
         ""Node.Array[1]"" : ""destination_property_of_array_element""   
-        }
-}";
+        }}
+}}";
             string templateWithConfig = template.Replace("{broker-address}", brokerAddress);    
             
             await File.WriteAllTextAsync(path, templateWithConfig);
