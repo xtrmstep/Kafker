@@ -28,7 +28,9 @@ namespace Kafker.Helpers
             // add missing columns
             foreach (var column in columns)
             {
-                var mapNotNullAndKeyExists = _mapConfig.Mapping.Any() && _mapConfig.Mapping.ContainsKey(column);
+                //if map is not null
+                
+                var mapNotNullAndKeyExists = _mapConfig != null && _mapConfig.Mapping.Any() && _mapConfig.Mapping.ContainsKey(column);
                 var renamedColumnName = column;
                 if (mapNotNullAndKeyExists)
                 {
@@ -37,7 +39,7 @@ namespace Kafker.Helpers
 
                 if (!_tbl.Columns.Contains(renamedColumnName))
                 {
-                    var shouldAddColumn = !_mapConfig.Mapping.Any() || mapNotNullAndKeyExists;
+                    var shouldAddColumn = _mapConfig != null && (!_mapConfig.Mapping.Any() || mapNotNullAndKeyExists);
                     if (!shouldAddColumn) continue;
 
                     var dataColumn = new DataColumn(renamedColumnName, typeof(object));
@@ -66,7 +68,8 @@ namespace Kafker.Helpers
                 var pair = line.Split("|");
                 //var timestamp = pair[0].Substring(1, pair[0].Length - 2);
                 var record = pair[1].Substring(1, pair[1].Length - 2);
-                JObject json = JsonConvert.DeserializeObject<JObject>(record, new JsonSerializerSettings {DateParseHandling = DateParseHandling.None});
+                JObject json = JsonConvert.DeserializeObject<JObject>(record,
+                    new JsonSerializerSettings {DateParseHandling = DateParseHandling.None});
                 list.Add(json);
             }
 
@@ -86,7 +89,6 @@ namespace Kafker.Helpers
             var destinationFile = new FileInfo($"{fileName.Replace(".dat", "")}.csv");
             await LoadFromFileAsync(fileName);
             await SaveToFileAsync(destinationFile);
-
         }
     }
 }
