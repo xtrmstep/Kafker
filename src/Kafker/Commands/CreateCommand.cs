@@ -30,11 +30,10 @@ namespace Kafker.Commands
         {
             var path = GetFilename(templateName, "cfg");
             var brokerAddress = $@"[""{string.Join("\",\"", _settings.Brokers)}""]";
-            var eventsToRead = $@"0|N";
             var template = $@"{{
     Brokers : {{broker-address}},
     Topic : ""topic-name"",
-    EventsToRead : {eventsToRead},
+    EventsToRead : {"0|N"},
     OffsetKind : ""Latest|Earliest"",
     Mapping : {{
         ""Property"" : ""destination_property_name"",
