@@ -28,8 +28,6 @@ namespace Kafker.Helpers
             // add missing columns
             foreach (var column in columns)
             {
-                //if map is not null
-                
                 var mapNotNullAndKeyExists = _mapConfig.Mapping.Any() && _mapConfig.Mapping.ContainsKey(column);
                 var renamedColumnName = column;
                 if (mapNotNullAndKeyExists)
