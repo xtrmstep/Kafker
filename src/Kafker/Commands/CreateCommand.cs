@@ -33,7 +33,7 @@ namespace Kafker.Commands
             var template = @"{
     Brokers : {broker-address},
     Topic : ""topic-name"",
-    EventsToRead : ""0|N"",
+    EventsToRead : 0|N,
     OffsetKind : ""Latest|Earliest"",
     Mapping : {
         ""Property"" : ""destination_property_name"",
