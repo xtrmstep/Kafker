@@ -11,7 +11,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 
-[assembly:InternalsVisibleTo("Kafker.Tests")]
+[assembly: InternalsVisibleTo("Kafker.Tests")]
 
 namespace Kafker
 {
@@ -49,8 +49,9 @@ namespace Kafker
             app.Command("extract", p =>
             {
                 p.Description = "Extract a topic events to a snapshot (.DAT) file";
-                
-                var topicArg = p.Option("-t|--topic <TOPIC>", "File name with topic configuration", CommandOptionType.SingleValue).IsRequired();
+
+                var topicArg = p.Option("-t|--topic <TOPIC>", "File name with topic configuration",
+                    CommandOptionType.SingleValue).IsRequired();
 
                 p.OnExecuteAsync(async cancellationToken =>
                 {
@@ -62,8 +63,9 @@ namespace Kafker
             app.Command("create", p =>
             {
                 p.Description = "Create a template topic configuration file";
-                
-                var nameArg = p.Option("-t|--topic <TOPIC>", "Name of a topic configuration", CommandOptionType.SingleValue);
+
+                var nameArg = p.Option("-t|--topic <TOPIC>", "Name of a topic configuration",
+                    CommandOptionType.SingleValue);
 
                 p.OnExecuteAsync(async cancellationToken =>
                 {
@@ -71,7 +73,7 @@ namespace Kafker
                     return await createTemplateCommand.InvokeAsync(cancellationToken, nameArg.Value());
                 });
             });
-            
+
             app.Command("list", p =>
             {
                 p.Description = "List existing configurations";
@@ -81,13 +83,15 @@ namespace Kafker
                     return await listCommand.InvokeAsync();
                 });
             });
-            
+
             app.Command("emit", p =>
             {
                 p.Description = "Emit events from a given snapshot file (.DAT)";
-                
-                var topicArg = p.Option("-t|--topic <TOPIC>", "Topic name to which events should be emitted", CommandOptionType.SingleValue).IsRequired();
-                var fileName = p.Argument("file", "Relative or absolute path to a DAT file with topic snapshot").IsRequired();
+
+                var topicArg = p.Option("-t|--topic <TOPIC>", "Topic name to which events should be emitted",
+                    CommandOptionType.SingleValue).IsRequired();
+                var fileName = p.Argument("file", "Relative or absolute path to a DAT file with topic snapshot")
+                    .IsRequired();
 
                 p.OnExecuteAsync(async cancellationToken =>
                 {
@@ -99,19 +103,20 @@ namespace Kafker
             app.Command("convert", p =>
             {
                 p.Description = "Convert JSON snapshot to a CSV file";
-                
-                var fileName = p.Argument("file", "Relative or absolute path to a DAT file with topic snapshot").IsRequired();
+
+                var fileName = p.Argument("file", "Relative or absolute path to a DAT file with topic snapshot")
+                    .IsRequired();
                 var topicArg =
-                    p.Option("-t|--topic <TOPIC>", "File name with topic configuration", CommandOptionType.SingleOrNoValue);
-                
+                    p.Option("-t|--topic <TOPIC>", "File name with topic configuration",
+                        CommandOptionType.SingleOrNoValue);
+
                 p.OnExecuteAsync(async cancellationToken =>
                 {
                     var convertCommand = services.GetService<IConvertCommand>();
-                    return await convertCommand.InvokeAsync(cancellationToken, fileName.Value,topicArg.Value());
-                    
+                    return await convertCommand.InvokeAsync(cancellationToken, fileName.Value, topicArg.Value());
                 });
             });
-            
+
             app.OnExecuteAsync(async cancellationToken =>
             {
                 await PhysicalConsole.Singleton.Error.WriteLineAsync("Specify a command");
@@ -119,7 +124,19 @@ namespace Kafker
                 return await Task.FromResult(0).ConfigureAwait(false);
             });
 
-            return await app.ExecuteAsync(args).ConfigureAwait(false);
+            if (!app.Commands.Exists(l => l.Name == args[0]))
+            {
+                await PhysicalConsole.Singleton.Out.WriteLineAsync(
+                    $"There is an error in your command name.");
+                app.ShowHelp();
+            }
+            else
+            { 
+                return await app.ExecuteAsync(args).ConfigureAwait(false);
+            }
+            
+            return 0;
+
         }
 
         public static IConfigurationRoot CreateConfiguration(string environment)
