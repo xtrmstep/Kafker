@@ -17,7 +17,7 @@ namespace Kafker.Helpers
 
         public SnapshotCsvConverter(KafkaTopicConfiguration mapConfig)
         {
-            _mapConfig = mapConfig;
+            _mapConfig = mapConfig ?? new KafkaTopicConfiguration();
         }
 
         private void Convert(JObject json)
@@ -28,9 +28,7 @@ namespace Kafker.Helpers
             // add missing columns
             foreach (var column in columns)
             {
-                //if map is not null
-                
-                var mapNotNullAndKeyExists = _mapConfig != null && _mapConfig.Mapping.Any() && _mapConfig.Mapping.ContainsKey(column);
+                var mapNotNullAndKeyExists = _mapConfig.Mapping.Any() && _mapConfig.Mapping.ContainsKey(column);
                 var renamedColumnName = column;
                 if (mapNotNullAndKeyExists)
                 {
@@ -39,7 +37,7 @@ namespace Kafker.Helpers
 
                 if (!_tbl.Columns.Contains(renamedColumnName))
                 {
-                    var shouldAddColumn = _mapConfig != null && (!_mapConfig.Mapping.Any() || mapNotNullAndKeyExists);
+                    var shouldAddColumn = !_mapConfig.Mapping.Any() || mapNotNullAndKeyExists;
                     if (!shouldAddColumn) continue;
 
                     var dataColumn = new DataColumn(renamedColumnName, typeof(object));
