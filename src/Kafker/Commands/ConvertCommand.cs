@@ -25,16 +25,8 @@ namespace Kafker.Commands
         {
             try
             {
-                KafkaTopicConfiguration cfg;
-                if (topic == null)
-                {
-                    cfg = null;
-                }
-                else
-                {
-                    cfg = await ExtractorHelper.ReadConfigurationAsync(topic, _settings, _console);
-                }
-                
+                var kafkaTopicConfiguration = topic == null ? null : await ExtractorHelper.ReadConfigurationAsync(topic, _settings, _console);
+
                 var isFound = true;
                 var snapshotFilePath = fileName;
                 if (!File.Exists(snapshotFilePath))
@@ -48,7 +40,7 @@ namespace Kafker.Commands
                 }
                 if (isFound)
                 {
-                    var csvConverter = new SnapshotCsvConverter(cfg);
+                    var csvConverter = new SnapshotCsvConverter(kafkaTopicConfiguration);
                     await csvConverter.ConvertAndSaveAsync(snapshotFilePath);
                     await _console.Out.WriteLineAsync($"\r\nConversion completed");
                 }
