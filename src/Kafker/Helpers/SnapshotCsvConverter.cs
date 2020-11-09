@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using JsonFlatten;
 using Kafker.Configurations;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace Kafker.Helpers
@@ -65,7 +66,7 @@ namespace Kafker.Helpers
                 var pair = line.Split("|");
                 //var timestamp = pair[0].Substring(1, pair[0].Length - 2);
                 var record = pair[1].Substring(1, pair[1].Length - 2);
-                JObject json = JObject.Parse(record);
+                JObject json = JsonConvert.DeserializeObject<JObject>(record, new JsonSerializerSettings {DateParseHandling = DateParseHandling.None});
                 list.Add(json);
             }
 
