@@ -131,12 +131,11 @@ namespace Kafker
                 app.ShowHelp();
             }
             else
-            { 
+            {
                 return await app.ExecuteAsync(args).ConfigureAwait(false);
             }
-            
-            return 0;
 
+            return 0;
         }
 
         public static IConfigurationRoot CreateConfiguration(string environment)
