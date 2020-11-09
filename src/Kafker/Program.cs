@@ -9,6 +9,7 @@ using Kafker.Kafka;
 using McMaster.Extensions.CommandLineUtils;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Newtonsoft.Json;
 
 [assembly:InternalsVisibleTo("Kafker.Tests")]
 
@@ -99,13 +100,15 @@ namespace Kafker
             {
                 p.Description = "Convert JSON snapshot to a CSV file";
                 
-                var topicArg = p.Option("-t|--topic <TOPIC>", "File name with topic configuration", CommandOptionType.SingleValue).IsRequired();
-                var fileName = p.Argument("file", "Relative or absolute path to a DAT file with topic snapshot").IsRequired();    
-                    
+                var fileName = p.Argument("file", "Relative or absolute path to a DAT file with topic snapshot").IsRequired();
+                var topicArg =
+                    p.Option("-t|--topic <TOPIC>", "File name with topic configuration", CommandOptionType.SingleOrNoValue);
+                
                 p.OnExecuteAsync(async cancellationToken =>
                 {
                     var convertCommand = services.GetService<IConvertCommand>();
                     return await convertCommand.InvokeAsync(cancellationToken, fileName.Value,topicArg.Value());
+                    
                 });
             });
             

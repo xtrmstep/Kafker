@@ -20,11 +20,13 @@ namespace Kafker.Commands
             _settings = settings;
         }
 
+
         public async Task<int> InvokeAsync(CancellationToken cancellationToken, string fileName, string topic)
         {
-            var cfg = await ExtractorHelper.ReadConfigurationAsync(topic, _settings, _console);
             try
             {
+                var kafkaTopicConfiguration = topic == null ? null : await ExtractorHelper.ReadConfigurationAsync(topic, _settings, _console);
+
                 var isFound = true;
                 var snapshotFilePath = fileName;
                 if (!File.Exists(snapshotFilePath))
@@ -38,11 +40,10 @@ namespace Kafker.Commands
                 }
                 if (isFound)
                 {
-                    var csvConverter = new SnapshotCsvConverter(cfg);
+                    var csvConverter = new SnapshotCsvConverter(kafkaTopicConfiguration);
                     await csvConverter.ConvertAndSaveAsync(snapshotFilePath);
                     await _console.Out.WriteLineAsync($"\r\nConversion completed");
                 }
-                
                 
             }
             finally

@@ -17,7 +17,7 @@ namespace Kafker.Helpers
 
         public SnapshotCsvConverter(KafkaTopicConfiguration mapConfig)
         {
-            _mapConfig = mapConfig;
+            _mapConfig = mapConfig ?? new KafkaTopicConfiguration();
         }
 
         private void Convert(JObject json)
@@ -66,7 +66,8 @@ namespace Kafker.Helpers
                 var pair = line.Split("|");
                 //var timestamp = pair[0].Substring(1, pair[0].Length - 2);
                 var record = pair[1].Substring(1, pair[1].Length - 2);
-                JObject json = JsonConvert.DeserializeObject<JObject>(record, new JsonSerializerSettings {DateParseHandling = DateParseHandling.None});
+                JObject json = JsonConvert.DeserializeObject<JObject>(record,
+                    new JsonSerializerSettings {DateParseHandling = DateParseHandling.None});
                 list.Add(json);
             }
 
@@ -86,7 +87,6 @@ namespace Kafker.Helpers
             var destinationFile = new FileInfo($"{fileName.Replace(".dat", "")}.csv");
             await LoadFromFileAsync(fileName);
             await SaveToFileAsync(destinationFile);
-
         }
     }
 }
