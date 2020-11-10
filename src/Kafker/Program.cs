@@ -9,7 +9,6 @@ using Kafker.Kafka;
 using McMaster.Extensions.CommandLineUtils;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Newtonsoft.Json;
 
 [assembly: InternalsVisibleTo("Kafker.Tests")]
 
@@ -66,7 +65,7 @@ namespace Kafker
 
                 var nameArg = p.Option("-t|--topic <TOPIC>", "Name of a topic configuration",
                     CommandOptionType.SingleValue);
-
+                
                 p.OnExecuteAsync(async cancellationToken =>
                 {
                     var createTemplateCommand = services.GetService<ICreateCommand>();
@@ -92,26 +91,27 @@ namespace Kafker
                     CommandOptionType.SingleValue).IsRequired();
                 var fileName = p.Argument("file", "Relative or absolute path to a DAT file with topic snapshot")
                     .IsRequired();
-
                 p.OnExecuteAsync(async cancellationToken =>
                 {
                     var emitCommand = services.GetService<IEmitCommand>();
                     return await emitCommand.InvokeAsync(cancellationToken, topicArg.Value(), fileName.Value);
                 });
             });
-
+            
             app.Command("convert", p =>
             {
                 p.Description = "Convert JSON snapshot to a CSV file";
 
                 var fileName = p.Argument("file", "Relative or absolute path to a DAT file with topic snapshot")
                     .IsRequired();
+                
                 var topicArg =
                     p.Option("-t|--topic <TOPIC>", "File name with topic configuration",
                         CommandOptionType.SingleOrNoValue);
-
+               
                 p.OnExecuteAsync(async cancellationToken =>
                 {
+                    
                     var convertCommand = services.GetService<IConvertCommand>();
                     return await convertCommand.InvokeAsync(cancellationToken, fileName.Value, topicArg.Value());
                 });
@@ -119,23 +119,25 @@ namespace Kafker
 
             app.OnExecuteAsync(async cancellationToken =>
             {
-                await PhysicalConsole.Singleton.Error.WriteLineAsync("Specify a command");
-                app.ShowHelp();
-                return await Task.FromResult(0).ConfigureAwait(false);
+                    await PhysicalConsole.Singleton.Error.WriteLineAsync("Specify a command");
+                    app.ShowHelp();
+                    return await Task.FromResult(0).ConfigureAwait(false);
+               
             });
 
-            if (!app.Commands.Exists(l => l.Name == args[0]))
-            {
-                await PhysicalConsole.Singleton.Out.WriteLineAsync(
-                    $"There is an error in your command name.");
-                app.ShowHelp();
-            }
-            else
+            try
             {
                 return await app.ExecuteAsync(args).ConfigureAwait(false);
             }
+            catch 
+            {
+                Console.WriteLine("There is an error in your command");
+                app.ShowHelp();
+                
+            }
 
             return 0;
+
         }
 
         public static IConfigurationRoot CreateConfiguration(string environment)
