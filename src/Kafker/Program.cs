@@ -65,7 +65,7 @@ namespace Kafker
 
                 var nameArg = p.Option("-t|--topic <TOPIC>", "Name of a topic configuration",
                     CommandOptionType.SingleValue);
-                
+
                 p.OnExecuteAsync(async cancellationToken =>
                 {
                     var createTemplateCommand = services.GetService<ICreateCommand>();
@@ -97,19 +97,19 @@ namespace Kafker
                     return await emitCommand.InvokeAsync(cancellationToken, topicArg.Value(), fileName.Value);
                 });
             });
-            
+
             app.Command("convert", p =>
             {
                 p.Description = "Convert JSON snapshot to a CSV file";
 
                 var fileName = p.Argument("file", "Relative or absolute path to a DAT file with topic snapshot")
                     .IsRequired();
-                
+
                 var topicArg = p.Option("-t|--topic <TOPIC>", "File name with topic configuration",
-                        CommandOptionType.SingleOrNoValue);
-               
+                    CommandOptionType.SingleOrNoValue);
+
                 p.OnExecuteAsync(async cancellationToken =>
-                {                    
+                {
                     var convertCommand = services.GetService<IConvertCommand>();
                     return await convertCommand.InvokeAsync(cancellationToken, fileName.Value, topicArg.Value());
                 });
@@ -129,11 +129,10 @@ namespace Kafker
             catch (Exception e)
             {
                 await PhysicalConsole.Singleton.Out.WriteLineAsync($"An error has occurred: {e.Message}");
-                app.ShowHelp();                
+                app.ShowHelp();
             }
 
             return 0;
-
         }
 
         public static IConfigurationRoot CreateConfiguration(string environment)
