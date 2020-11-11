@@ -27,28 +27,42 @@ namespace Kafker.Commands
         {
             var cfg = await ExtractorHelper.ReadConfigurationAsync(topic, _settings, _console);
 
+            var isFound = true;
+            var snapshotFilePath = fileName;
             var producedEvents = 0;
-            using var topicProducer = _producerFactory.Create(cfg);
-            using (var reader = new StreamReader(fileName))
+            if (!File.Exists(snapshotFilePath))
             {
-                try
+                snapshotFilePath = Path.Combine(_settings.Destination, fileName);
+                if (!File.Exists(snapshotFilePath))
                 {
-                    string line;
-                    while ((line = await reader.ReadLineAsync()) != null)
-                    {
-                        if (cancellationToken.IsCancellationRequested) break;
-                        
-                        var pair = line.Split("|");
-                        //var timestamp = pair[0].Substring(1, pair[0].Length - 2);
-                        var jsonText = pair[1].Substring(1, pair[1].Length - 2);
-                        await topicProducer.ProduceAsync(jsonText);
-                        producedEvents++;
-                    }
-
+                    isFound = false;
+                    await _console.Out.WriteAsync($"File cannot be found : {fileName}");
                 }
-                finally
+            }
+
+            using var topicProducer = _producerFactory.Create(cfg);
+            if (isFound)
+            {
+                using (var reader = new StreamReader(snapshotFilePath))
                 {
-                    await _console.Out.WriteLineAsync($"\r\nProduced {producedEvents} events");
+                    try
+                    {
+                        string line;
+                        while ((line = await reader.ReadLineAsync()) != null)
+                        {
+                            if (cancellationToken.IsCancellationRequested) break;
+
+                            var pair = line.Split("|");
+                            //var timestamp = pair[0].Substring(1, pair[0].Length - 2);
+                            var jsonText = pair[1].Substring(1, pair[1].Length - 2);
+                            await topicProducer.ProduceAsync(jsonText);
+                            producedEvents++;
+                        }
+                    }
+                    finally
+                    {
+                        await _console.Out.WriteLineAsync($"\r\nProduced {producedEvents} events");
+                    }
                 }
             }
 
