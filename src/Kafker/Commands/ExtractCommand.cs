@@ -54,7 +54,7 @@ namespace Kafker.Commands
 
                     numberOfReadEvents++;
                     var message = JObject.Parse(consumeResult.Message.Value).ToString(Formatting.None);
-                    await streamWriter.WriteLineAsync($"{consumeResult.Message.Timestamp.UnixTimestampMs}|{message}");
+                    await streamWriter.WriteLineAsync($"\"{consumeResult.Message.Timestamp.UnixTimestampMs}\"|\"{message}\"");
                     
                    
 
