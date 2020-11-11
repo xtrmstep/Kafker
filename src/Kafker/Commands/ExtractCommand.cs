@@ -5,6 +5,8 @@ using Kafker.Configurations;
 using Kafker.Helpers;
 using Kafker.Kafka;
 using McMaster.Extensions.CommandLineUtils;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace Kafker.Commands
 {
@@ -51,7 +53,9 @@ namespace Kafker.Commands
                     }
 
                     numberOfReadEvents++;
-                    await streamWriter.WriteLineAsync($"\"{consumeResult.Message.Timestamp.UnixTimestampMs}\"|\"{consumeResult.Message.Value}\"");
+                    var message = JObject.Parse(consumeResult.Message.Value).ToString(Formatting.None);
+                    await streamWriter.WriteLineAsync($"\"{consumeResult.Message.Timestamp.UnixTimestampMs}\"|\"{message}\"");
+                    
                    
 
                     if (totalEventsToRead > 0)
