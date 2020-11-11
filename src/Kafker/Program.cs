@@ -129,9 +129,9 @@ namespace Kafker
             {
                 return await app.ExecuteAsync(args).ConfigureAwait(false);
             }
-            catch 
+            catch (Exception e)
             {
-                Console.WriteLine("There is an error in your command");
+                await PhysicalConsole.Singleton.Error.WriteLineAsync($"There is an error in your command. {e.Message}");
                 app.ShowHelp();
                 
             }
