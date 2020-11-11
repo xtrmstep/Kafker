@@ -41,8 +41,8 @@ namespace Kafker.Commands
                 while (!cancellationToken.IsCancellationRequested)
                 {
                     var consumeResult = topicConsumer.Consume(cancellationToken);
-                    totalNumberOfConsumedEvents++;
                     if (consumeResult.IsPartitionEOF) break;
+                    totalNumberOfConsumedEvents++;
 
                     if (string.IsNullOrWhiteSpace(consumeResult.Message.Value))
                     {
