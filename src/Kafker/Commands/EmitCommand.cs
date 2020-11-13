@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -28,28 +29,39 @@ namespace Kafker.Commands
             var cfg = await ExtractorHelper.ReadConfigurationAsync(topic, _settings, _console);
 
             var producedEvents = 0;
-            using var topicProducer = _producerFactory.Create(cfg);
-            using (var reader = new StreamReader(fileName))
+            if (!File.Exists(fileName))
             {
-                try
+                fileName = Path.Combine(_settings.Destination, fileName);
+                if (!File.Exists(fileName))
                 {
-                    string line;
-                    while ((line = await reader.ReadLineAsync()) != null)
-                    {
-                        if (cancellationToken.IsCancellationRequested) break;
-                        
-                        var pair = line.Split("|");
-                        //var timestamp = pair[0].Substring(1, pair[0].Length - 2);
-                        var jsonText = pair[1].Substring(1, pair[1].Length - 2);
-                        await topicProducer.ProduceAsync(jsonText);
-                        producedEvents++;
-                    }
+                    await _console.Error.WriteAsync($"Error: Cannot find the file: {fileName}");
+                    return await Task.FromResult(1).ConfigureAwait(false); // no ok
+                }
+            }
 
-                }
-                finally
+            using var topicProducer = _producerFactory.Create(cfg);
+            using var reader = new StreamReader(fileName);
+            try
+            {
+                string line;
+                while ((line = await reader.ReadLineAsync()) != null)
                 {
-                    await _console.Out.WriteLineAsync($"\r\nProduced {producedEvents} events");
+                    if (cancellationToken.IsCancellationRequested) break;
+
+                    var pair = line.Split("|");
+                    var jsonText = pair[1].Substring(1, pair[1].Length - 2);
+                    await topicProducer.ProduceAsync(jsonText);
+                    producedEvents++;
                 }
+            }
+            catch (Exception err)
+            {
+                await _console.Error.WriteLineAsync($"\r\nError: {err.Message}");
+                return await Task.FromResult(1).ConfigureAwait(false); // error
+            }
+            finally
+            {
+                await _console.Out.WriteLineAsync($"\r\nProduced {producedEvents} events");
             }
 
             return await Task.FromResult(0).ConfigureAwait(false); // ok
