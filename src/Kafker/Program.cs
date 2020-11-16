@@ -1,4 +1,5 @@
 ﻿using System;
+using System.ComponentModel;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
@@ -23,18 +24,7 @@ namespace Kafker
 
             var kafkerSettings = configuration.GetSection(nameof(KafkerSettings)).Get<KafkerSettings>();
 
-            var services = new ServiceCollection()
-                .AddSingleton<IConsumerFactory, ConsumerFactory>()
-                .AddSingleton<IProducerFactory, ProducerFactory>()
-                .AddSingleton<IFileTagProvider, FileTagProvider>()
-                .AddSingleton<IExtractCommand, ExtractCommand>()
-                .AddSingleton<ICreateCommand, CreateCommand>()
-                .AddSingleton<IConvertCommand, ConvertCommand>()
-                .AddSingleton<IListCommand, ListCommand>()
-                .AddSingleton<IEmitCommand, EmitCommand>()
-                .AddSingleton(PhysicalConsole.Singleton)
-                .AddSingleton(kafkerSettings)
-                .BuildServiceProvider();
+            var services = CreateServiceProvider(kafkerSettings);
 
             using var app = new CommandLineApplication
             {
@@ -89,10 +79,22 @@ namespace Kafker
 
                 var topicArg = p.Option("-t|--topic <TOPIC>", "Topic name to which events should be emitted",
                     CommandOptionType.SingleValue).IsRequired();
+                var preserveArg = p.Option("-p|--preserve <PRESERVE>", "", CommandOptionType.SingleOrNoValue);
                 var fileName = p.Argument("file", "Relative or absolute path to a DAT file with topic snapshot")
                     .IsRequired();
+                
                 p.OnExecuteAsync(async cancellationToken =>
                 {
+
+                    if (preserveArg.HasValue())
+                    {
+                        services = CreateServiceProvider(kafkerSettings, collection => collection.AddSingleton<IEmitter, EmitPreserveTime>());
+                    }
+                    else
+                    {
+                        services = CreateServiceProvider(kafkerSettings, 
+                            collection => collection.AddSingleton<IEmitter, Emit>());
+                    }
                     var emitCommand = services.GetService<IEmitCommand>();
                     return await emitCommand.InvokeAsync(cancellationToken, topicArg.Value(), fileName.Value);
                 });
@@ -134,6 +136,28 @@ namespace Kafker
 
             return 0;
         }
+
+        private static ServiceProvider CreateServiceProvider(KafkerSettings kafkerSettings, Action<IServiceCollection> addAdditionalServices = null)
+        {
+            var servicesCollection = new ServiceCollection()
+                .AddSingleton<IConsumerFactory, ConsumerFactory>()
+                .AddSingleton<IProducerFactory, ProducerFactory>()
+                .AddSingleton<IFileTagProvider, FileTagProvider>()
+                .AddSingleton<IExtractCommand, ExtractCommand>()
+                .AddSingleton<ICreateCommand, CreateCommand>()
+                .AddSingleton<IConvertCommand, ConvertCommand>()
+                .AddSingleton<IListCommand, ListCommand>()
+                .AddSingleton<IEmitCommand, EmitCommand>()
+                .AddSingleton(PhysicalConsole.Singleton)
+                .AddSingleton(kafkerSettings);
+
+            addAdditionalServices?.Invoke(servicesCollection);
+
+            var services = servicesCollection.BuildServiceProvider();
+            
+            return services;
+        }
+
 
         public static IConfigurationRoot CreateConfiguration(string environment)
         {
