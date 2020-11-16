@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Xml;
 using Kafker.Commands;
 using Kafker.Configurations;
 using Kafker.Kafka;
@@ -13,44 +15,31 @@ namespace Kafker.Helpers
 {
     public class EmitPreserveTime : Emit
     {
+        static volatile bool startEvent = false;
         private readonly IConsole _console;
-        private readonly IProducerFactory _producerFactory;
+        private static IProducerFactory _producerFactory;
         private readonly KafkerSettings _settings;
 
-        public EmitPreserveTime(IConsole console,IProducerFactory producerFactory,
-            KafkerSettings settings) : base(console,producerFactory,settings)
+        public EmitPreserveTime(IConsole console, IProducerFactory producerFactory,
+            KafkerSettings settings) : base(console, producerFactory, settings)
         {
             _console = console;
             _producerFactory = producerFactory;
             _settings = settings;
         }
-        
-        public override async Task<int> EmitEvents(CancellationToken cancellationToken,string fileName,string topic)
+
+        public override async Task<int> EmitEvents(CancellationToken cancellationToken, string fileName, string topic)
         {
-            var cfg = await ExtractorHelper.ReadConfigurationAsync(topic, _settings,_console);
-            var timerList = new List<Timer>();
+            var cfg = await ExtractorHelper.ReadConfigurationAsync(topic, _settings, _console);
             var producedEvents = 0;
-            
+
             try
             {
                 var getDictionary = await CreatePreserveTime(fileName);
-                using var stateObject = new PreserveTime();
-                var waitHandles = new List<WaitHandle>();
-                foreach (var item in getDictionary)
-                {
-                    if (cancellationToken.IsCancellationRequested) break;
+                var tasks = getDictionary.Select(x => SetTimer(x.Key, x.Value, cfg)).ToArray();
 
-                    stateObject.ItemsToSend = item.Value;
-                    stateObject.ProducerConfig = cfg;
-                    stateObject.ResetEvent = new AutoResetEvent(false);
-                    waitHandles.Add(stateObject.ResetEvent);
-                    var delay = item.Key;
-                    timerList.Add(new Timer(EmitEventsOnTime, stateObject, delay, Timeout.Infinite));
-                    producedEvents++;
-                }
-
-                WaitHandle.WaitAll(waitHandles.ToArray());
-                
+                startEvent = true;
+                Task.WaitAll(tasks);
             }
             catch (Exception e)
             {
@@ -59,16 +48,12 @@ namespace Kafker.Helpers
             }
             finally
             {
-                foreach (var item in timerList)
-                {
-                    await item.DisposeAsync();
-                }
-
                 await _console.Out.WriteLineAsync($"\r\nProduced {producedEvents} events");
             }
+
             return await Task.FromResult(0).ConfigureAwait(false); // ok
         }
-        
+
         private async Task<Dictionary<long, List<string>>> CreatePreserveTime(string fileName)
         {
             var allLines = await File.ReadAllLinesAsync(fileName);
@@ -94,33 +79,50 @@ namespace Kafker.Helpers
 
             return eventsToEmit;
         }
-        
-        private void EmitEventsOnTime(object state)
+
+        private static async Task SetTimer(long key, List<string> value, KafkaTopicConfiguration config)
+        {
+            await Task.Yield();
+            var stopEvent = new AutoResetEvent(false);
+
+            var data = new PreserveTime
+            {
+                ItemsToSend = value,
+                ProducerConfig = config,
+                Waiter = stopEvent
+            };
+            while (!startEvent)
+            {
+                Task.Yield();
+            }
+
+            var timer = new Timer(EmitEventsOnTime, data, key, Timeout.Infinite);
+            stopEvent.WaitOne();
+            //producedEvents++;
+        }
+
+        private static void EmitEventsOnTime(object state)
         {
             if (state != null)
             {
                 var preserver = (PreserveTime) state;
-                
+
                 using var topicProducer = _producerFactory.Create(preserver.ProducerConfig);
                 foreach (var item in preserver.ItemsToSend)
                 {
                     topicProducer.ProduceAsync(item).GetAwaiter().GetResult();
                 }
 
-                preserver.ResetEvent.Set();
+                preserver.Waiter.Set();
             }
         }
     }
-    
-    class PreserveTime : IDisposable
+
+    class PreserveTime
     {
         public List<string> ItemsToSend { get; set; }
-        public AutoResetEvent ResetEvent { get; set; }
+        public AutoResetEvent Waiter { get; set; }
+        public AutoResetEvent Start { get; set; }
         public KafkaTopicConfiguration ProducerConfig { get; set; }
-
-        public void Dispose()
-        {
-            ResetEvent?.Dispose();
-        }
     }
 }
