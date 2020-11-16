@@ -43,7 +43,7 @@ namespace Kafker.Helpers
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.Message);
+                await _console.Out.WriteLineAsync(e.Message);
             }
             finally
             {

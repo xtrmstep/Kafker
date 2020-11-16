@@ -32,8 +32,7 @@ namespace Kafker.Commands
             }
             catch (Exception e)
             {
-                Console.WriteLine(e);
-                throw;
+                await _console.Out.WriteLineAsync(e.Message);
             }
 
             return await Task.FromResult(0).ConfigureAwait(false); // ok
