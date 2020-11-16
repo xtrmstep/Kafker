@@ -36,7 +36,7 @@ namespace Kafker.Helpers
             try
             {
                 var getDictionary = await CreatePreserveTime(fileName);
-                var tasks = getDictionary.Select(x => SetTimer(x.Key, x.Value, cfg)).ToArray();
+                var tasks = getDictionary.Select(x => SetTimer(x.Key, x.Value, cfg,cancellationToken)).ToArray();
 
                 startEvent = true;
                 Task.WaitAll(tasks);
@@ -80,7 +80,7 @@ namespace Kafker.Helpers
             return eventsToEmit;
         }
 
-        private static async Task SetTimer(long key, List<string> value, KafkaTopicConfiguration config)
+        private static async Task SetTimer(long key, List<string> value, KafkaTopicConfiguration config,CancellationToken cancellationToken)
         {
             await Task.Yield();
             var stopEvent = new AutoResetEvent(false);
@@ -93,12 +93,17 @@ namespace Kafker.Helpers
             };
             while (!startEvent)
             {
-                Task.Yield();
+                await Task.Delay(1, cancellationToken);
+                if (cancellationToken.IsCancellationRequested) return;
             }
 
-            var timer = new Timer(EmitEventsOnTime, data, key, Timeout.Infinite);
-            stopEvent.WaitOne();
-            //producedEvents++;
+            var ts = TimeSpan.FromTicks(key);
+            await Task.Delay(ts, cancellationToken);
+            if (!cancellationToken.IsCancellationRequested)
+            {
+                var timer = new Timer(EmitEventsOnTime, data, key, Timeout.Infinite);
+                stopEvent.WaitOne();
+            }
         }
 
         private static void EmitEventsOnTime(object state)
