@@ -28,6 +28,17 @@ namespace Kafker.Commands
 
         public async Task<int> InvokeAsync(CancellationToken cancellationToken, string topic)
         {
+            var top = "";
+            var offsetEarliest = OffsetKind.Earliest;
+            var events = 5;
+            var config = new KafkaTopicConfiguration
+            {
+                Topic = top,
+                OffsetKind = offsetEarliest,
+                EventsToRead = (uint)events
+            };
+            
+            
             var cfg = await ExtractorHelper.ReadConfigurationAsync(topic, _settings, _console);
             var destinationCsvFile = GetDestinationCsvFilename(topic, _settings, _fileTagProvider);
 
