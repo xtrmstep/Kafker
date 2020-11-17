@@ -1,26 +1,23 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data;
 using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Xml;
-using Kafker.Commands;
 using Kafker.Configurations;
 using Kafker.Kafka;
 using McMaster.Extensions.CommandLineUtils;
 
 namespace Kafker.Helpers
 {
-    public class EmitPreserveTime : Emit
+    public class EventsEmitterPreserveTime : SimpleEventsEventsEmitter
     {
         static volatile bool startEvent = false;
         private readonly IConsole _console;
         private static IProducerFactory _producerFactory;
         private readonly KafkerSettings _settings;
 
-        public EmitPreserveTime(IConsole console, IProducerFactory producerFactory,
+        public EventsEmitterPreserveTime(IConsole console, IProducerFactory producerFactory,
             KafkerSettings settings) : base(console, producerFactory, settings)
         {
             _console = console;
@@ -32,11 +29,12 @@ namespace Kafker.Helpers
         {
             var cfg = await ExtractorHelper.ReadConfigurationAsync(topic, _settings, _console);
             var producedEvents = 0;
+            var topicProducer = _producerFactory.Create(cfg);
 
             try
             {
-                var getDictionary = await CreatePreserveTime(fileName);
-                var tasks = getDictionary.Select(x => SetTimer(x.Key, x.Value, cfg,cancellationToken)).ToArray();
+                var mappedEventsWithTimeStamp = await MapEventsWithTimeStamp(fileName);
+                var tasks = mappedEventsWithTimeStamp.Select(x => ScheduleEventsSending(x.Key, x.Value, topicProducer, cancellationToken)).ToArray();
 
                 startEvent = true;
                 Task.WaitAll(tasks);
@@ -54,80 +52,64 @@ namespace Kafker.Helpers
             return await Task.FromResult(0).ConfigureAwait(false); // ok
         }
 
-        private async Task<Dictionary<long, List<string>>> CreatePreserveTime(string fileName)
+        private async Task<List<Tuple<long, string>>> LoadAndSplitSnapshotData(string fileName)
         {
             var allLines = await File.ReadAllLinesAsync(fileName);
-            var timeStampWithEvents = new List<Tuple<long, string>>();
-            var eventsToEmit = new Dictionary<long, List<string>>();
             var initialSnapshot = allLines.Select(item => item.Split("|")).Select(pair => new Tuple<long, string>(long.Parse(pair[0].Replace("\"", "")), pair[1])).ToList();
-            var smallest = initialSnapshot.Select(x => x.Item1).Min();
 
-            foreach (var (timeStamp, itemToSend) in initialSnapshot)
+            return initialSnapshot;
+        }
+
+        private async Task<Dictionary<long, List<string>>> MapEventsWithTimeStamp(string fileName)
+        {
+            var listOfSnapshotTuples = await LoadAndSplitSnapshotData(fileName);
+            var timeStampWithEvents = new List<Tuple<long, string>>();
+            var eventsMappedByTime = new Dictionary<long, List<string>>();
+
+            var smallest = listOfSnapshotTuples.Select(x => x.Item1).Min();
+
+            foreach (var (timeStamp, itemToSend) in listOfSnapshotTuples)
             {
                 timeStampWithEvents.Add(new Tuple<long, string>(timeStamp - smallest, itemToSend));
             }
 
             foreach (var (timeStamp, itemToSend) in timeStampWithEvents)
             {
-                if (!eventsToEmit.ContainsKey(timeStamp))
+                if (!eventsMappedByTime.ContainsKey(timeStamp))
                 {
-                    eventsToEmit.Add(timeStamp, new List<string>());
+                    eventsMappedByTime.Add(timeStamp, new List<string>());
                 }
 
-                eventsToEmit[timeStamp].Add(itemToSend);
+                eventsMappedByTime[timeStamp].Add(itemToSend);
             }
 
-            return eventsToEmit;
+            return eventsMappedByTime;
         }
 
-        private static async Task SetTimer(long key, List<string> value, KafkaTopicConfiguration config,CancellationToken cancellationToken)
+        private static async Task ScheduleEventsSending(long key, List<string> value, RecordsProducer producer, CancellationToken cancellationToken)
         {
             await Task.Yield();
-            var stopEvent = new AutoResetEvent(false);
 
-            var data = new PreserveTime
-            {
-                ItemsToSend = value,
-                ProducerConfig = config,
-                Waiter = stopEvent
-            };
             while (!startEvent)
             {
                 await Task.Delay(1, cancellationToken);
                 if (cancellationToken.IsCancellationRequested) return;
             }
-
-            var ts = TimeSpan.FromTicks(key);
-            await Task.Delay(ts, cancellationToken);
+            
+            await Task.Delay((int)key, cancellationToken);
             if (!cancellationToken.IsCancellationRequested)
             {
-                var timer = new Timer(EmitEventsOnTime, data, key, Timeout.Infinite);
-                stopEvent.WaitOne();
+                EmitEventsOnTime(value,producer);
             }
         }
 
-        private static void EmitEventsOnTime(object state)
+        private static void EmitEventsOnTime(List<string> list, RecordsProducer producer)
         {
-            if (state != null)
+            foreach (var item in list)
             {
-                var preserver = (PreserveTime) state;
-
-                using var topicProducer = _producerFactory.Create(preserver.ProducerConfig);
-                foreach (var item in preserver.ItemsToSend)
-                {
-                    topicProducer.ProduceAsync(item).GetAwaiter().GetResult();
-                }
-
-                preserver.Waiter.Set();
+                producer.ProduceAsync(item).GetAwaiter().GetResult();
             }
-        }
-    }
 
-    class PreserveTime
-    {
-        public List<string> ItemsToSend { get; set; }
-        public AutoResetEvent Waiter { get; set; }
-        public AutoResetEvent Start { get; set; }
-        public KafkaTopicConfiguration ProducerConfig { get; set; }
+        }
     }
 }

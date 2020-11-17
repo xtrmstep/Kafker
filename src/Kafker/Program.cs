@@ -88,12 +88,12 @@ namespace Kafker
 
                     if (preserveArg.HasValue())
                     {
-                        services = CreateServiceProvider(kafkerSettings, collection => collection.AddSingleton<IEmitter, EmitPreserveTime>());
+                        services = CreateServiceProvider(kafkerSettings, collection => collection.AddSingleton<IEventsEmitter, EventsEmitterPreserveTime>());
                     }
                     else
                     {
                         services = CreateServiceProvider(kafkerSettings, 
-                            collection => collection.AddSingleton<IEmitter, Emit>());
+                            collection => collection.AddSingleton<IEventsEmitter, SimpleEventsEventsEmitter>());
                     }
                     var emitCommand = services.GetService<IEmitCommand>();
                     return await emitCommand.InvokeAsync(cancellationToken, topicArg.Value(), fileName.Value);

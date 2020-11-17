@@ -8,13 +8,13 @@ using McMaster.Extensions.CommandLineUtils;
 
 namespace Kafker.Helpers
 {
-    public class Emit : IEmitter
+    public class SimpleEventsEventsEmitter : IEventsEmitter
     {
         private readonly IConsole _console;
         private readonly IProducerFactory _producerFactory;
         private readonly KafkerSettings _settings;
 
-        public Emit(IConsole console, IProducerFactory producerFactory,KafkerSettings settings)
+        public SimpleEventsEventsEmitter(IConsole console, IProducerFactory producerFactory,KafkerSettings settings)
         {
             _console = console;
             _producerFactory = producerFactory;

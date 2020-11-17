@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 namespace Kafker.Helpers
 {
-    public interface IEmitter
+    public interface IEventsEmitter
     {
         Task<int> EmitEvents(CancellationToken cancellationToken,string filename, string topic);
     }

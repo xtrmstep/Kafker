@@ -13,21 +13,21 @@ namespace Kafker.Commands
         private readonly IConsole _console;
         private readonly KafkerSettings _settings;
         private readonly IProducerFactory _producerFactory;
-        private readonly IEmitter _emitter;
+        private readonly IEventsEmitter _eventsEmitter;
 
-        public EmitCommand(IConsole console, KafkerSettings settings, IProducerFactory producerFactory, IEmitter emitter)
+        public EmitCommand(IConsole console, KafkerSettings settings, IProducerFactory producerFactory, IEventsEmitter eventsEmitter)
         {
             _console = console;
             _settings = settings;
             _producerFactory = producerFactory;
-            _emitter = emitter;
+            _eventsEmitter = eventsEmitter;
         }
 
         public async Task<int> InvokeAsync(CancellationToken cancellationToken, string topic, string fileName )
         {
             try
             {
-                await _emitter.EmitEvents(cancellationToken,fileName,topic);
+                await _eventsEmitter.EmitEvents(cancellationToken,fileName,topic);
                
             }
             catch (Exception e)
