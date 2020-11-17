@@ -16,6 +16,7 @@ namespace Kafker.Helpers
         private readonly IConsole _console;
         private static IProducerFactory _producerFactory;
         private readonly KafkerSettings _settings;
+        private static int _producedEvents = 0;
 
         public EventsEmitterPreserveTime(IConsole console, IProducerFactory producerFactory,
             KafkerSettings settings) : base(console, producerFactory, settings)
@@ -28,7 +29,6 @@ namespace Kafker.Helpers
         public override async Task<int> EmitEvents(CancellationToken cancellationToken, string fileName, string topic)
         {
             var cfg = await ExtractorHelper.ReadConfigurationAsync(topic, _settings, _console);
-            var producedEvents = 0;
             var topicProducer = _producerFactory.Create(cfg);
 
             try
@@ -46,7 +46,7 @@ namespace Kafker.Helpers
             }
             finally
             {
-                await _console.Out.WriteLineAsync($"\r\nProduced {producedEvents} events");
+                await _console.Out.WriteLineAsync($"\r\nProduced {_producedEvents} events");
             }
 
             return await Task.FromResult(0).ConfigureAwait(false); // ok
@@ -95,11 +95,11 @@ namespace Kafker.Helpers
                 await Task.Delay(1, cancellationToken);
                 if (cancellationToken.IsCancellationRequested) return;
             }
-            
-            await Task.Delay((int)key, cancellationToken);
+
+            await Task.Delay((int) key, cancellationToken);
             if (!cancellationToken.IsCancellationRequested)
             {
-                EmitEventsOnTime(value,producer);
+                EmitEventsOnTime(value, producer);
             }
         }
 
@@ -108,8 +108,8 @@ namespace Kafker.Helpers
             foreach (var item in list)
             {
                 producer.ProduceAsync(item).GetAwaiter().GetResult();
+                _producedEvents++;
             }
-
         }
     }
 }
