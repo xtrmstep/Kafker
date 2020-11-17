@@ -30,11 +30,12 @@ namespace Kafker.Commands
                 await _eventsEmitter.EmitEvents(cancellationToken,fileName,topic);
                
             }
-            catch (Exception e)
+            catch (Exception err)
             {
-                await _console.Out.WriteLineAsync(e.Message);
+                await _console.Error.WriteLineAsync($"\r\nError: {err.Message}");
+                return await Task.FromResult(1).ConfigureAwait(false); // error
             }
-
+            
             return await Task.FromResult(0).ConfigureAwait(false); // ok
         }
     }
