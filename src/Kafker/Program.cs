@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -23,8 +24,9 @@ namespace Kafker
             var configuration = CreateConfiguration(environment);
 
             var kafkerSettings = configuration.GetSection(nameof(KafkerSettings)).Get<KafkerSettings>();
+            var configSettings = configuration.GetSection(nameof(KafkaTopicConfiguration)).Get<KafkaTopicConfiguration>();
 
-            var services = CreateServiceProvider(kafkerSettings);
+            var services = CreateServiceProvider(kafkerSettings,configSettings);
 
             using var app = new CommandLineApplication
             {
@@ -39,13 +41,30 @@ namespace Kafker
             {
                 p.Description = "Extract a topic events to a snapshot (.DAT) file";
 
-                var topicArg = p.Option("-t|--topic <TOPIC>", "File name with topic configuration",
-                    CommandOptionType.SingleValue).IsRequired();
-
+                var configArg = p.Option("-cfg|--config <CONFIG>", "Configuration file",
+                    CommandOptionType.SingleOrNoValue);
+                var brokers = p.Option("-b|--broker <BROKER>", "Broker",CommandOptionType.MultipleValue);
+                var topicName = p.Option("-t|--topic <TOPIC>", "Topic name from where the snapshot will be extracted",
+                    CommandOptionType.SingleOrNoValue);
+                var eventsToRead = p.Option("-n|--number <NUMBER>", "Number of events to read",
+                    CommandOptionType.SingleOrNoValue);
+                var offSetKind = p.Option("-o|--offset <OFFSET>", "Option to read Kafka topic from earliest or only new events",
+                    CommandOptionType.SingleOrNoValue);
                 p.OnExecuteAsync(async cancellationToken =>
                 {
+                    var argumentList = new Dictionary<string,string>();
+                    if (!configArg.HasValue())
+                    {
+                        foreach (var item in p.Options)
+                        {
+                            if (item.HasValue())
+                            {
+                                argumentList.Add(item.LongName,item.Value());
+                            }
+                        }
+                    }
                     var extractCommand = services.GetService<IExtractCommand>();
-                    return await extractCommand.InvokeAsync(cancellationToken, topicArg.Value());
+                    return await extractCommand.InvokeAsync(cancellationToken, configArg.Value(), argumentList);
                 });
             });
 
@@ -53,11 +72,12 @@ namespace Kafker
             {
                 p.Description = "Create a template topic configuration file";
 
-                var nameArg = p.Option("-t|--topic <TOPIC>", "Name of a topic configuration",
+                var nameArg = p.Option("-cfg|--config <CONFIG>", "Configuration file",
                     CommandOptionType.SingleValue);
 
                 p.OnExecuteAsync(async cancellationToken =>
                 {
+                    var count = p.Options.Count;
                     var createTemplateCommand = services.GetService<ICreateCommand>();
                     return await createTemplateCommand.InvokeAsync(cancellationToken, nameArg.Value());
                 });
@@ -82,19 +102,19 @@ namespace Kafker
                 var preserveArg = p.Option("-p|--preserve <PRESERVE>", "", CommandOptionType.SingleOrNoValue);
                 var fileName = p.Argument("file", "Relative or absolute path to a DAT file with topic snapshot")
                     .IsRequired();
-                
+
                 p.OnExecuteAsync(async cancellationToken =>
                 {
-
                     if (preserveArg.HasValue())
                     {
-                        services = CreateServiceProvider(kafkerSettings, collection => collection.AddSingleton<IEventsEmitter, EventsEmitterPreserveTime>());
+                        services = CreateServiceProvider(kafkerSettings, configSettings,collection => collection.AddSingleton<IEventsEmitter, EventsEmitterPreserveTime>());
                     }
                     else
                     {
-                        services = CreateServiceProvider(kafkerSettings, 
+                        services = CreateServiceProvider(kafkerSettings,configSettings,
                             collection => collection.AddSingleton<IEventsEmitter, SimpleEventsEventsEmitter>());
                     }
+
                     var emitCommand = services.GetService<IEmitCommand>();
                     return await emitCommand.InvokeAsync(cancellationToken, topicArg.Value(), fileName.Value);
                 });
@@ -107,7 +127,7 @@ namespace Kafker
                 var fileName = p.Argument("file", "Relative or absolute path to a DAT file with topic snapshot")
                     .IsRequired();
 
-                var topicArg = p.Option("-t|--topic <TOPIC>", "File name with topic configuration",
+                var topicArg = p.Option("-cfg|--config <CONFIG>", "Configuration file",
                     CommandOptionType.SingleOrNoValue);
 
                 p.OnExecuteAsync(async cancellationToken =>
@@ -137,7 +157,7 @@ namespace Kafker
             return 0;
         }
 
-        private static ServiceProvider CreateServiceProvider(KafkerSettings kafkerSettings, Action<IServiceCollection> addAdditionalServices = null)
+        private static ServiceProvider CreateServiceProvider(KafkerSettings kafkerSettings, KafkaTopicConfiguration configSettings,Action<IServiceCollection> addAdditionalServices = null)
         {
             var servicesCollection = new ServiceCollection()
                 .AddSingleton<IConsumerFactory, ConsumerFactory>()
@@ -149,12 +169,13 @@ namespace Kafker
                 .AddSingleton<IListCommand, ListCommand>()
                 .AddSingleton<IEmitCommand, EmitCommand>()
                 .AddSingleton(PhysicalConsole.Singleton)
-                .AddSingleton(kafkerSettings);
+                .AddSingleton(kafkerSettings)
+                .AddSingleton(configSettings);
 
             addAdditionalServices?.Invoke(servicesCollection);
 
             var services = servicesCollection.BuildServiceProvider();
-            
+
             return services;
         }
 

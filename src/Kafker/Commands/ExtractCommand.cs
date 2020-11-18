@@ -1,4 +1,6 @@
-﻿using System.IO;
+﻿using System.Collections.Generic;
+using System.IO;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Kafker.Configurations;
@@ -16,30 +18,30 @@ namespace Kafker.Commands
         private readonly IFileTagProvider _fileTagProvider;
         private readonly IConsumerFactory _consumerFactory;
         private readonly KafkerSettings _settings;
+        private readonly KafkaTopicConfiguration _configuration;
 
         public ExtractCommand(IConsole console, IFileTagProvider fileTagProvider, KafkerSettings settings,
-            IConsumerFactory consumerFactory)
+            IConsumerFactory consumerFactory,KafkaTopicConfiguration configuration)
         {
             _console = console;
             _fileTagProvider = fileTagProvider;
             _consumerFactory = consumerFactory;
             _settings = settings;
+            _configuration = configuration;
         }
 
-        public async Task<int> InvokeAsync(CancellationToken cancellationToken, string topic)
+        public async Task<int> InvokeAsync(CancellationToken cancellationToken, string topic,Dictionary<string,string> listOfArguments)
         {
-            var top = "";
-            var offsetEarliest = OffsetKind.Earliest;
-            var events = 5;
-            var config = new KafkaTopicConfiguration
+            KafkaTopicConfiguration cfg = null;
+            if (topic != null)
             {
-                Topic = top,
-                OffsetKind = offsetEarliest,
-                EventsToRead = (uint)events
-            };
+                cfg = await ExtractorHelper.ReadConfigurationAsync(topic, _settings, _console);
+            }
+            else
+            {
+                cfg = await ExtractorHelper.ConstructConfiguration(listOfArguments, _configuration);
+            }
             
-            
-            var cfg = await ExtractorHelper.ReadConfigurationAsync(topic, _settings, _console);
             var destinationCsvFile = GetDestinationCsvFilename(topic, _settings, _fileTagProvider);
 
             var totalNumberOfConsumedEvents = 0;
@@ -66,7 +68,7 @@ namespace Kafker.Commands
                     numberOfReadEvents++;
                     var message = JObject.Parse(consumeResult.Message.Value).ToString(Formatting.None);
                     await streamWriter.WriteLineAsync($"{consumeResult.Message.Timestamp.UnixTimestampMs}|{message}");
-                    
+
                     if (totalEventsToRead > 0)
                         await _console.Out.WriteAsync($"\rloaded {numberOfReadEvents}/{totalEventsToRead}...");
                     else
@@ -77,11 +79,12 @@ namespace Kafker.Commands
                         break;
                 }
             }
-                    
+
             finally
             {
                 await _console.Out.WriteLineAsync($"\n\rConsumed {totalNumberOfConsumedEvents} events");
             }
+
             return await Task.FromResult(0).ConfigureAwait(false); // ok
         }
 
