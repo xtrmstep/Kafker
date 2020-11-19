@@ -19,7 +19,8 @@ namespace Kafker
 {
     public class Program
     {
-        private const int RESULT_CODE_ERROR = 0;
+        private const int RESULT_CODE_OK = 0;
+        private const int RESULT_CODE_ERROR = 1;
 
         public static async Task<int> Main(string[] args)
         {
@@ -27,9 +28,8 @@ namespace Kafker
             var configuration = CreateConfiguration(environment);
 
             var kafkerSettings = configuration.GetSection(nameof(KafkerSettings)).Get<KafkerSettings>();
-            var configSettings = configuration.GetSection(nameof(KafkaTopicConfiguration)).Get<KafkaTopicConfiguration>();
 
-            var services = CreateServiceProvider(kafkerSettings, configSettings);
+            var services = CreateServiceProvider(kafkerSettings);
 
             using var app = new CommandLineApplication
             {
@@ -49,40 +49,29 @@ namespace Kafker
                 var topicName = p.Option("-t|--topic <TOPIC>", "Topic name from where the snapshot will be extracted", CommandOptionType.SingleOrNoValue);
                 var eventsToRead = p.Option("-n|--number <NUMBER>", "Number of events to read", CommandOptionType.SingleOrNoValue);
                 var offSetKind = p.Option("-o|--offset <OFFSET>", "Option to read Kafka topic from earliest or only new events", CommandOptionType.SingleOrNoValue);
-                
+
                 p.OnExecuteAsync(async cancellationToken =>
                 {
-                    var argumentList = new Dictionary<string, string>();
-                    var shouldOverrideConfigFile = false;
-
                     try
                     {
                         if (!configArg.HasValue() && !topicName.HasValue())
                         {
                             await PhysicalConsole.Singleton.Out.WriteLineAsync($"Topic should be specified");
-                            return 1;
-                        }
-                        foreach (var item in p.Options.Where(item => item.HasValue()))
-                        {
-                            argumentList.Add(item.LongName, item.Value());
+                            return RESULT_CODE_ERROR;
                         }
 
-                        if (configArg.HasValue() && argumentList.Count > 1)
-                        {
-                            shouldOverrideConfigFile = true;
-                        }
+                        KafkaTopicConfiguration readConfigurationAsync = await ExtractorHelper.GetConfiguration(p.Options, kafkerSettings);
 
                         var extractCommand = services.GetService<IExtractCommand>();
-                        return await extractCommand.InvokeAsync(cancellationToken, configArg.Value(), argumentList, shouldOverrideConfigFile);
+                        return await extractCommand.InvokeAsync(cancellationToken, readConfigurationAsync);
                     }
                     catch (Exception err)
                     {
                         await PhysicalConsole.Singleton.Out.WriteLineAsync($"An error has occurred: {err.Message}");
                         app.ShowHelp();
-                        
                     }
 
-                    return RESULT_CODE_ERROR;
+                    return RESULT_CODE_OK;
                 });
             });
 
@@ -115,16 +104,16 @@ namespace Kafker
                 p.Description = "Emit events from a given snapshot file (.DAT)";
 
                 var topicArg = p.Option("-t|--topic <TOPIC>", "Topic name to which events should be emitted", CommandOptionType.SingleValue).IsRequired();
-                var preserveArg = p.Option("-p|--preserve <PRESERVE>", "", CommandOptionType.SingleOrNoValue);
+                var preserveArg = p.Option("-p|--preserve <PRESERVE>", "Preserve the timestamp in the snapshot", CommandOptionType.SingleOrNoValue);
                 var fileName = p.Argument("file", "Relative or absolute path to a DAT file with topic snapshot").IsRequired();
 
                 p.OnExecuteAsync(async cancellationToken =>
                 {
-                    var addEventsEmitterService = preserveArg.HasValue() 
-                        ? (Action<IServiceCollection>)(collection => collection.AddSingleton<IEventsEmitter, EventsEmitterPreserveTime>())
+                    var addEventsEmitterService = preserveArg.HasValue()
+                        ? (Action<IServiceCollection>) (collection => collection.AddSingleton<IEventsEmitter, EventsEmitterPreserveTime>())
                         : collection => collection.AddSingleton<IEventsEmitter, SimpleEventsEventsEmitter>();
-                    
-                    services = CreateServiceProvider(kafkerSettings, configSettings, addEventsEmitterService);
+
+                    services = CreateServiceProvider(kafkerSettings, addEventsEmitterService);
                     var emitCommand = services.GetService<IEmitCommand>();
                     return await emitCommand.InvokeAsync(cancellationToken, topicArg.Value(), fileName.Value);
                 });
@@ -148,7 +137,7 @@ namespace Kafker
             {
                 await PhysicalConsole.Singleton.Error.WriteLineAsync("Specify a command");
                 app.ShowHelp();
-                return await Task.FromResult(RESULT_CODE_ERROR).ConfigureAwait(false);
+                return await Task.FromResult(RESULT_CODE_OK).ConfigureAwait(false);
             });
 
             try
@@ -161,10 +150,10 @@ namespace Kafker
                 app.ShowHelp();
             }
 
-            return RESULT_CODE_ERROR;
+            return RESULT_CODE_OK;
         }
 
-        private static ServiceProvider CreateServiceProvider(KafkerSettings kafkerSettings, KafkaTopicConfiguration configSettings, Action<IServiceCollection> addAdditionalServices = null)
+        private static ServiceProvider CreateServiceProvider(KafkerSettings kafkerSettings, Action<IServiceCollection> addAdditionalServices = null)
         {
             var servicesCollection = new ServiceCollection()
                 .AddSingleton<IConsumerFactory, ConsumerFactory>()
@@ -176,8 +165,7 @@ namespace Kafker
                 .AddSingleton<IListCommand, ListCommand>()
                 .AddSingleton<IEmitCommand, EmitCommand>()
                 .AddSingleton(PhysicalConsole.Singleton)
-                .AddSingleton(kafkerSettings)
-                .AddSingleton(configSettings);
+                .AddSingleton(kafkerSettings);
 
             addAdditionalServices?.Invoke(servicesCollection);
 

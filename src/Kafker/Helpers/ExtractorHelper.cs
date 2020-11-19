@@ -30,20 +30,66 @@ namespace Kafker.Helpers
             return topicConfiguration;
         }
 
-        public static async Task<KafkaTopicConfiguration> ConstructConfiguration(Dictionary<string, string> argumentList, KafkerSettings settings)
+        public static async Task<KafkaTopicConfiguration> ConstructConfiguration(Dictionary<string,string> argumentList, KafkerSettings settings)
         {
-            uint EVENTS_TO_READ_DEFAULT = 0;
-            var OFFSET_KIND_DEFAULT = OffsetKind.Latest;
+            const uint EVENTS_TO_READ_DEFAULT = 0;
+            const OffsetKind OFFSET_KIND_DEFAULT = OffsetKind.Latest;
             
             var topicConfig = new KafkaTopicConfiguration()
             {
                 Brokers = argumentList.ContainsKey("broker") ? new[] {argumentList["broker"]} : settings.Brokers,
-                Topic = argumentList.ContainsKey("topic") ? argumentList["topic"] : null,
-                OffsetKind = argumentList.ContainsKey("offset") ? (OffsetKind) Enum.Parse(typeof(OffsetKind), argumentList["offset"],true) : OFFSET_KIND_DEFAULT,
+                Topic = argumentList["topic"],
+                OffsetKind = argumentList.ContainsKey("offset") ? (OffsetKind) Enum.Parse(typeof(OffsetKind), argumentList["offset"], true) : OFFSET_KIND_DEFAULT,
                 EventsToRead = argumentList.ContainsKey("number") ? uint.Parse(argumentList["number"]) : EVENTS_TO_READ_DEFAULT
             };
 
             return topicConfig;
         }
+
+        public static async Task<KafkaTopicConfiguration> OverrideConfiguration(KafkaTopicConfiguration configuration, Dictionary<string,string> argumentList, KafkerSettings settings)
+        {
+            var topicConfig = new KafkaTopicConfiguration()
+            {
+                Brokers = argumentList.ContainsKey("broker") ? new[] {argumentList["broker"]} : configuration.Brokers,
+                Topic = argumentList.ContainsKey("topic") ? argumentList["topic"] : configuration.Topic,
+                OffsetKind = argumentList.ContainsKey("offset") ? (OffsetKind) Enum.Parse(typeof(OffsetKind), argumentList["offset"], true) : configuration.OffsetKind,
+                EventsToRead = argumentList.ContainsKey("number") ? uint.Parse(argumentList["number"]) : configuration.EventsToRead
+            };
+
+            return topicConfig;
+        }
+
+        public static Dictionary<string,string> GetOptionList(List<CommandOption> commandOptions)
+        {
+            var argumentList = new Dictionary<string, string>();
+            foreach (var item in commandOptions.Where(item => item.HasValue()))
+            {
+                argumentList.Add(item.LongName, item.Value());
+            }
+
+            return argumentList;
+        }
+
+        public static async Task<KafkaTopicConfiguration> GetConfiguration(List<CommandOption> commandOptions,KafkerSettings settings)
+        {
+            
+            var argumentList = GetOptionList(commandOptions);
+            string value = "";
+            var getConfgArg = argumentList.TryGetValue("config", out value);
+            KafkaTopicConfiguration conf = value != null ? await ReadConfigurationAsync(value, settings, PhysicalConsole.Singleton) : null;
+            
+            if (value != null && argumentList.Count > 1)
+            {
+                conf = await OverrideConfiguration(conf, argumentList, settings);
+            }
+            
+            if (value == null && argumentList.Count >= 1)
+            {
+                conf = await ConstructConfiguration(argumentList, settings);
+            }
+
+            return conf;
+        }
+
     }
 }
