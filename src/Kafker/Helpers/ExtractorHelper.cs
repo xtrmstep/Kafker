@@ -34,13 +34,12 @@ namespace Kafker.Helpers
         {
             var topicConfig = new KafkaTopicConfiguration()
             {
-                Brokers = argumentList.ContainsKey("brokers") ? new []{argumentList["brokers"]} : settings.Brokers,
+                Brokers = argumentList.ContainsKey("broker") ? new[] {argumentList["broker"]} : settings.Brokers,
                 Topic = argumentList.ContainsKey("topic") ? argumentList["topic"] : settings.Topic,
-                OffsetKind = argumentList.ContainsKey("offset") ? (OffsetKind) Enum.Parse(typeof(OffsetKind), argumentList["offset"]) : settings.OffsetKind,
+                OffsetKind = argumentList.ContainsKey("offset") ? (OffsetKind) Enum.Parse(typeof(OffsetKind), argumentList["offset"],true) : settings.OffsetKind,
                 EventsToRead = argumentList.ContainsKey("number") ? uint.Parse(argumentList["number"]) : settings.EventsToRead
-
             };
-            
+
             return topicConfig;
         }
     }

@@ -8,6 +8,6 @@ namespace Kafker.Commands
 {
     public interface IExtractCommand
     {
-        Task<int> InvokeAsync(CancellationToken cancellationToken, string topic,Dictionary<string,string> argumentList);
+        Task<int> InvokeAsync(CancellationToken cancellationToken, string topic,Dictionary<string,string> argumentList,bool shouldOverride);
     }
 }

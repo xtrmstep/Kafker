@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.IO;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Kafker.Configurations;
@@ -21,7 +20,7 @@ namespace Kafker.Commands
         private readonly KafkaTopicConfiguration _configuration;
 
         public ExtractCommand(IConsole console, IFileTagProvider fileTagProvider, KafkerSettings settings,
-            IConsumerFactory consumerFactory,KafkaTopicConfiguration configuration)
+            IConsumerFactory consumerFactory, KafkaTopicConfiguration configuration)
         {
             _console = console;
             _fileTagProvider = fileTagProvider;
@@ -30,18 +29,21 @@ namespace Kafker.Commands
             _configuration = configuration;
         }
 
-        public async Task<int> InvokeAsync(CancellationToken cancellationToken, string topic,Dictionary<string,string> listOfArguments)
+        public async Task<int> InvokeAsync(CancellationToken cancellationToken, string topic, Dictionary<string, string> listOfArguments, bool shouldOverride)
         {
-            KafkaTopicConfiguration cfg = null;
-            if (topic != null)
+        
+            KafkaTopicConfiguration cfg = topic != null ? await ExtractorHelper.ReadConfigurationAsync(topic, _settings, _console) : null;
+            if (topic != null && shouldOverride)
             {
-                cfg = await ExtractorHelper.ReadConfigurationAsync(topic, _settings, _console);
+                var tobeOverriden = await ExtractorHelper.ReadConfigurationAsync(topic, _settings, _console);
+                cfg = await ExtractorHelper.ConstructConfiguration(listOfArguments, tobeOverriden);
             }
-            else
+
+            if (topic == null)
             {
                 cfg = await ExtractorHelper.ConstructConfiguration(listOfArguments, _configuration);
             }
-            
+
             var destinationCsvFile = GetDestinationCsvFilename(topic, _settings, _fileTagProvider);
 
             var totalNumberOfConsumedEvents = 0;

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Kafker.Commands;
@@ -26,7 +27,7 @@ namespace Kafker
             var kafkerSettings = configuration.GetSection(nameof(KafkerSettings)).Get<KafkerSettings>();
             var configSettings = configuration.GetSection(nameof(KafkaTopicConfiguration)).Get<KafkaTopicConfiguration>();
 
-            var services = CreateServiceProvider(kafkerSettings,configSettings);
+            var services = CreateServiceProvider(kafkerSettings, configSettings);
 
             using var app = new CommandLineApplication
             {
@@ -43,7 +44,7 @@ namespace Kafker
 
                 var configArg = p.Option("-cfg|--config <CONFIG>", "Configuration file",
                     CommandOptionType.SingleOrNoValue);
-                var brokers = p.Option("-b|--broker <BROKER>", "Broker",CommandOptionType.MultipleValue);
+                var brokers = p.Option("-b|--broker <BROKER>", "Broker", CommandOptionType.MultipleValue);
                 var topicName = p.Option("-t|--topic <TOPIC>", "Topic name from where the snapshot will be extracted",
                     CommandOptionType.SingleOrNoValue);
                 var eventsToRead = p.Option("-n|--number <NUMBER>", "Number of events to read",
@@ -52,19 +53,37 @@ namespace Kafker
                     CommandOptionType.SingleOrNoValue);
                 p.OnExecuteAsync(async cancellationToken =>
                 {
-                    var argumentList = new Dictionary<string,string>();
-                    if (!configArg.HasValue())
+                    var argumentList = new Dictionary<string, string>();
+                    var shouldOverrideConfigFile = false;
+
+                    try
                     {
-                        foreach (var item in p.Options)
+                        if (!configArg.HasValue() && !topicName.HasValue())
                         {
-                            if (item.HasValue())
-                            {
-                                argumentList.Add(item.LongName,item.Value());
-                            }
+                            await PhysicalConsole.Singleton.Out.WriteLineAsync($"Topic should be specified");
+                            return 1;
                         }
+                        foreach (var item in p.Options.Where(item => item.HasValue()))
+                        {
+                            argumentList.Add(item.LongName, item.Value());
+                        }
+
+                        if (configArg.HasValue() && argumentList.Count > 1)
+                        {
+                            shouldOverrideConfigFile = true;
+                        }
+
+                        var extractCommand = services.GetService<IExtractCommand>();
+                        return await extractCommand.InvokeAsync(cancellationToken, configArg.Value(), argumentList, shouldOverrideConfigFile);
                     }
-                    var extractCommand = services.GetService<IExtractCommand>();
-                    return await extractCommand.InvokeAsync(cancellationToken, configArg.Value(), argumentList);
+                    catch (Exception err)
+                    {
+                        await PhysicalConsole.Singleton.Out.WriteLineAsync($"An error has occurred: {err.Message}");
+                        app.ShowHelp();
+                        
+                    }
+
+                    return 0;
                 });
             });
 
@@ -107,11 +126,11 @@ namespace Kafker
                 {
                     if (preserveArg.HasValue())
                     {
-                        services = CreateServiceProvider(kafkerSettings, configSettings,collection => collection.AddSingleton<IEventsEmitter, EventsEmitterPreserveTime>());
+                        services = CreateServiceProvider(kafkerSettings, configSettings, collection => collection.AddSingleton<IEventsEmitter, EventsEmitterPreserveTime>());
                     }
                     else
                     {
-                        services = CreateServiceProvider(kafkerSettings,configSettings,
+                        services = CreateServiceProvider(kafkerSettings, configSettings,
                             collection => collection.AddSingleton<IEventsEmitter, SimpleEventsEventsEmitter>());
                     }
 
@@ -157,7 +176,7 @@ namespace Kafker
             return 0;
         }
 
-        private static ServiceProvider CreateServiceProvider(KafkerSettings kafkerSettings, KafkaTopicConfiguration configSettings,Action<IServiceCollection> addAdditionalServices = null)
+        private static ServiceProvider CreateServiceProvider(KafkerSettings kafkerSettings, KafkaTopicConfiguration configSettings, Action<IServiceCollection> addAdditionalServices = null)
         {
             var servicesCollection = new ServiceCollection()
                 .AddSingleton<IConsumerFactory, ConsumerFactory>()
