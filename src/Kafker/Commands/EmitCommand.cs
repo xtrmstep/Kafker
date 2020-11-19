@@ -23,12 +23,12 @@ namespace Kafker.Commands
             _eventsEmitter = eventsEmitter;
         }
 
-        public async Task<int> InvokeAsync(CancellationToken cancellationToken, string topic, string fileName )
+        public async Task<int> InvokeAsync(CancellationToken cancellationToken, KafkaTopicConfiguration kafkaTopicConfiguration, string fileName)
         {
             try
             {
-                await _eventsEmitter.EmitEvents(cancellationToken,fileName,topic);
-               
+                await _eventsEmitter.EmitEvents(cancellationToken, kafkaTopicConfiguration, fileName);
+
             }
             catch (Exception err)
             {

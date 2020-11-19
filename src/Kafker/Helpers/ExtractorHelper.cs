@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Data;
 using System.IO;
 using System.Linq;
@@ -14,13 +13,13 @@ namespace Kafker.Helpers
 {
     public static class ExtractorHelper
     {
-        public static async Task<KafkaTopicConfiguration> ReadConfigurationAsync(string topic, KafkerSettings setting, IConsole console)
+        public static async Task<KafkaTopicConfiguration> ReadConfigurationAsync(string configName, KafkerSettings setting, IConsole console)
         {
-            var path = Path.Combine(setting.ConfigurationFolder, $"{topic}.cfg");
+            var path = Path.Combine(setting.ConfigurationFolder, $"{configName}.cfg");
             if (!File.Exists(path))
             {
                 await console.Error.WriteLineAsync($"Cannot read the configuration file: {path}");
-                throw new ApplicationException($"Cannot load configuration for topic '{topic}'");
+                throw new ApplicationException($"Cannot load configuration for topic '{configName}'");
             }
 
 
@@ -30,64 +29,36 @@ namespace Kafker.Helpers
             return topicConfiguration;
         }
 
-        public static async Task<KafkaTopicConfiguration> ConstructConfiguration(Dictionary<string,string> argumentList, KafkerSettings settings)
-        {
-            const uint EVENTS_TO_READ_DEFAULT = 0;
-            const OffsetKind OFFSET_KIND_DEFAULT = OffsetKind.Latest;
-            
-            var topicConfig = new KafkaTopicConfiguration()
-            {
-                Brokers = argumentList.ContainsKey("broker") ? new[] {argumentList["broker"]} : settings.Brokers,
-                Topic = argumentList["topic"],
-                OffsetKind = argumentList.ContainsKey("offset") ? (OffsetKind) Enum.Parse(typeof(OffsetKind), argumentList["offset"], true) : OFFSET_KIND_DEFAULT,
-                EventsToRead = argumentList.ContainsKey("number") ? uint.Parse(argumentList["number"]) : EVENTS_TO_READ_DEFAULT
-            };
-
-            return topicConfig;
-        }
-
-        public static async Task<KafkaTopicConfiguration> OverrideConfiguration(KafkaTopicConfiguration configuration, Dictionary<string,string> argumentList, KafkerSettings settings)
-        {
-            var topicConfig = new KafkaTopicConfiguration()
-            {
-                Brokers = argumentList.ContainsKey("broker") ? new[] {argumentList["broker"]} : configuration.Brokers,
-                Topic = argumentList.ContainsKey("topic") ? argumentList["topic"] : configuration.Topic,
-                OffsetKind = argumentList.ContainsKey("offset") ? (OffsetKind) Enum.Parse(typeof(OffsetKind), argumentList["offset"], true) : configuration.OffsetKind,
-                EventsToRead = argumentList.ContainsKey("number") ? uint.Parse(argumentList["number"]) : configuration.EventsToRead
-            };
-
-            return topicConfig;
-        }
-
-        public static Dictionary<string,string> GetOptionList(List<CommandOption> commandOptions)
-        {
-            var argumentList = new Dictionary<string, string>();
-            foreach (var item in commandOptions.Where(item => item.HasValue()))
-            {
-                argumentList.Add(item.LongName, item.Value());
-            }
-
-            return argumentList;
-        }
-
-        public static async Task<KafkaTopicConfiguration> GetConfiguration(List<CommandOption> commandOptions,KafkerSettings settings)
+        public static async Task<KafkaTopicConfiguration> GetConfiguration(KafkerSettings settings,
+            string configName, string brokers, string topic, uint? eventToRead, OffsetKind? offset)
         {
             
-            var argumentList = GetOptionList(commandOptions);
-            string value = "";
-            var getConfgArg = argumentList.TryGetValue("config", out value);
-            KafkaTopicConfiguration conf = value != null ? await ReadConfigurationAsync(value, settings, PhysicalConsole.Singleton) : null;
+            var conf = string.IsNullOrWhiteSpace(configName) 
+                ? await ReadConfigurationAsync(configName, settings, PhysicalConsole.Singleton)
+                : new KafkaTopicConfiguration
+                {
+                    Brokers = settings.Brokers,
+                    Topic = string.Empty,
+                    EventsToRead = 0,
+                    OffsetKind = OffsetKind.Latest
+                };
             
-            if (value != null && argumentList.Count > 1)
-            {
-                conf = await OverrideConfiguration(conf, argumentList, settings);
-            }
-            
-            if (value == null && argumentList.Count >= 1)
-            {
-                conf = await ConstructConfiguration(argumentList, settings);
-            }
+            if (!string.IsNullOrWhiteSpace(brokers))
+                conf.Brokers = brokers.Split(",");
 
+            if (!string.IsNullOrWhiteSpace(topic))
+                conf.Topic = topic;
+            
+            if (eventToRead.HasValue)
+                conf.EventsToRead = eventToRead.Value;
+            
+            if (offset.HasValue)
+                conf.OffsetKind = offset.Value;
+            
+            // validation
+            if (!conf.Brokers.Any()) throw new ArgumentException("Brokers are required", nameof(KafkaTopicConfiguration.Brokers));
+            if (string.IsNullOrWhiteSpace(conf.Topic)) throw new ArgumentException("Topic is required", nameof(KafkaTopicConfiguration.Topic));
+            
             return conf;
         }
 

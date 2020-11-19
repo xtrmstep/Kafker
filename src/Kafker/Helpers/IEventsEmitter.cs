@@ -1,10 +1,11 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
+using Kafker.Configurations;
 
 namespace Kafker.Helpers
 {
     public interface IEventsEmitter
     {
-        Task<int> EmitEvents(CancellationToken cancellationToken,string filename, string topic);
+        Task<int> EmitEvents(CancellationToken cancellationToken, KafkaTopicConfiguration kafkaTopicConfiguration, string filename);
     }
 }
