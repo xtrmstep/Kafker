@@ -30,14 +30,17 @@ namespace Kafker.Helpers
             return topicConfiguration;
         }
 
-        public static async Task<KafkaTopicConfiguration> ConstructConfiguration(Dictionary<string, string> argumentList, KafkaTopicConfiguration settings)
+        public static async Task<KafkaTopicConfiguration> ConstructConfiguration(Dictionary<string, string> argumentList, KafkerSettings settings)
         {
+            uint EVENTS_TO_READ_DEFAULT = 0;
+            var OFFSET_KIND_DEFAULT = OffsetKind.Latest;
+            
             var topicConfig = new KafkaTopicConfiguration()
             {
                 Brokers = argumentList.ContainsKey("broker") ? new[] {argumentList["broker"]} : settings.Brokers,
-                Topic = argumentList.ContainsKey("topic") ? argumentList["topic"] : settings.Topic,
-                OffsetKind = argumentList.ContainsKey("offset") ? (OffsetKind) Enum.Parse(typeof(OffsetKind), argumentList["offset"],true) : settings.OffsetKind,
-                EventsToRead = argumentList.ContainsKey("number") ? uint.Parse(argumentList["number"]) : settings.EventsToRead
+                Topic = argumentList.ContainsKey("topic") ? argumentList["topic"] : null,
+                OffsetKind = argumentList.ContainsKey("offset") ? (OffsetKind) Enum.Parse(typeof(OffsetKind), argumentList["offset"],true) : OFFSET_KIND_DEFAULT,
+                EventsToRead = argumentList.ContainsKey("number") ? uint.Parse(argumentList["number"]) : EVENTS_TO_READ_DEFAULT
             };
 
             return topicConfig;
