@@ -19,6 +19,8 @@ namespace Kafker
 {
     public class Program
     {
+        private const int RESULT_CODE_ERROR = 0;
+
         public static async Task<int> Main(string[] args)
         {
             var environment = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT");
@@ -42,15 +44,12 @@ namespace Kafker
             {
                 p.Description = "Extract a topic events to a snapshot (.DAT) file";
 
-                var configArg = p.Option("-cfg|--config <CONFIG>", "Configuration file",
-                    CommandOptionType.SingleOrNoValue);
+                var configArg = p.Option("-cfg|--config <CONFIG>", "Configuration file", CommandOptionType.SingleOrNoValue);
                 var brokers = p.Option("-b|--broker <BROKER>", "Broker", CommandOptionType.MultipleValue);
-                var topicName = p.Option("-t|--topic <TOPIC>", "Topic name from where the snapshot will be extracted",
-                    CommandOptionType.SingleOrNoValue);
-                var eventsToRead = p.Option("-n|--number <NUMBER>", "Number of events to read",
-                    CommandOptionType.SingleOrNoValue);
-                var offSetKind = p.Option("-o|--offset <OFFSET>", "Option to read Kafka topic from earliest or only new events",
-                    CommandOptionType.SingleOrNoValue);
+                var topicName = p.Option("-t|--topic <TOPIC>", "Topic name from where the snapshot will be extracted", CommandOptionType.SingleOrNoValue);
+                var eventsToRead = p.Option("-n|--number <NUMBER>", "Number of events to read", CommandOptionType.SingleOrNoValue);
+                var offSetKind = p.Option("-o|--offset <OFFSET>", "Option to read Kafka topic from earliest or only new events", CommandOptionType.SingleOrNoValue);
+                
                 p.OnExecuteAsync(async cancellationToken =>
                 {
                     var argumentList = new Dictionary<string, string>();
@@ -83,7 +82,7 @@ namespace Kafker
                         
                     }
 
-                    return 0;
+                    return RESULT_CODE_ERROR;
                 });
             });
 
@@ -91,8 +90,7 @@ namespace Kafker
             {
                 p.Description = "Create a template topic configuration file";
 
-                var nameArg = p.Option("-cfg|--config <CONFIG>", "Configuration file",
-                    CommandOptionType.SingleValue);
+                var nameArg = p.Option("-cfg|--config <CONFIG>", "Configuration file", CommandOptionType.SingleValue);
 
                 p.OnExecuteAsync(async cancellationToken =>
                 {
@@ -116,24 +114,17 @@ namespace Kafker
             {
                 p.Description = "Emit events from a given snapshot file (.DAT)";
 
-                var topicArg = p.Option("-t|--topic <TOPIC>", "Topic name to which events should be emitted",
-                    CommandOptionType.SingleValue).IsRequired();
+                var topicArg = p.Option("-t|--topic <TOPIC>", "Topic name to which events should be emitted", CommandOptionType.SingleValue).IsRequired();
                 var preserveArg = p.Option("-p|--preserve <PRESERVE>", "", CommandOptionType.SingleOrNoValue);
-                var fileName = p.Argument("file", "Relative or absolute path to a DAT file with topic snapshot")
-                    .IsRequired();
+                var fileName = p.Argument("file", "Relative or absolute path to a DAT file with topic snapshot").IsRequired();
 
                 p.OnExecuteAsync(async cancellationToken =>
                 {
-                    if (preserveArg.HasValue())
-                    {
-                        services = CreateServiceProvider(kafkerSettings, configSettings, collection => collection.AddSingleton<IEventsEmitter, EventsEmitterPreserveTime>());
-                    }
-                    else
-                    {
-                        services = CreateServiceProvider(kafkerSettings, configSettings,
-                            collection => collection.AddSingleton<IEventsEmitter, SimpleEventsEventsEmitter>());
-                    }
-
+                    var addEventsEmitterService = preserveArg.HasValue() 
+                        ? (Action<IServiceCollection>)(collection => collection.AddSingleton<IEventsEmitter, EventsEmitterPreserveTime>())
+                        : collection => collection.AddSingleton<IEventsEmitter, SimpleEventsEventsEmitter>();
+                    
+                    services = CreateServiceProvider(kafkerSettings, configSettings, addEventsEmitterService);
                     var emitCommand = services.GetService<IEmitCommand>();
                     return await emitCommand.InvokeAsync(cancellationToken, topicArg.Value(), fileName.Value);
                 });
@@ -143,11 +134,8 @@ namespace Kafker
             {
                 p.Description = "Convert JSON snapshot to a CSV file";
 
-                var fileName = p.Argument("file", "Relative or absolute path to a DAT file with topic snapshot")
-                    .IsRequired();
-
-                var topicArg = p.Option("-cfg|--config <CONFIG>", "Configuration file",
-                    CommandOptionType.SingleOrNoValue);
+                var fileName = p.Argument("file", "Relative or absolute path to a DAT file with topic snapshot").IsRequired();
+                var topicArg = p.Option("-cfg|--config <CONFIG>", "Configuration file", CommandOptionType.SingleOrNoValue);
 
                 p.OnExecuteAsync(async cancellationToken =>
                 {
@@ -160,7 +148,7 @@ namespace Kafker
             {
                 await PhysicalConsole.Singleton.Error.WriteLineAsync("Specify a command");
                 app.ShowHelp();
-                return await Task.FromResult(0).ConfigureAwait(false);
+                return await Task.FromResult(RESULT_CODE_ERROR).ConfigureAwait(false);
             });
 
             try
@@ -173,7 +161,7 @@ namespace Kafker
                 app.ShowHelp();
             }
 
-            return 0;
+            return RESULT_CODE_ERROR;
         }
 
         private static ServiceProvider CreateServiceProvider(KafkerSettings kafkerSettings, KafkaTopicConfiguration configSettings, Action<IServiceCollection> addAdditionalServices = null)
