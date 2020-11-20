@@ -153,8 +153,9 @@ namespace Kafker
         private static async Task<KafkaTopicConfiguration> InitKafkaTopicConfiguration(KafkerSettings kafkerSettings, CommandOption configName,
             CommandOption brokers = null, CommandOption topicName = null, CommandOption eventsToRead = null, CommandOption offSetKind = null)
         {
-            uint? events = eventsToRead == null ? null : eventsToRead.HasValue() ? uint.Parse(eventsToRead.Value()) : (uint?) null;
-            OffsetKind? offset = offSetKind == null ? null : offSetKind.HasValue() ? (OffsetKind?) Enum.Parse(typeof(OffsetKind), offSetKind.Value(), true) : null;
+            var events = eventsToRead != null && eventsToRead.HasValue() ? uint.Parse(eventsToRead.Value()) : (uint?) null;
+            OffsetKind? offset = offSetKind != null && offSetKind.HasValue() ? (OffsetKind?) Enum.Parse(typeof(OffsetKind), offSetKind.Value(), true) : null;
+            
             var readConfigurationAsync = await ExtractorHelper.GetConfiguration(kafkerSettings,
                 configName.Value(),
                 brokers.Value(),
