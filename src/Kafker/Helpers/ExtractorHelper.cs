@@ -33,7 +33,7 @@ namespace Kafker.Helpers
             string configName, string brokers, string topic, uint? eventToRead, OffsetKind? offset)
         {
             
-            var conf = string.IsNullOrWhiteSpace(configName) 
+            var conf = !string.IsNullOrWhiteSpace(configName) 
                 ? await ReadConfigurationAsync(configName, settings, PhysicalConsole.Singleton)
                 : new KafkaTopicConfiguration
                 {

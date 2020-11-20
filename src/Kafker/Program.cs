@@ -99,7 +99,8 @@ namespace Kafker
                 var brokers = p.Option("-b|--broker <BROKER>", "Broker", CommandOptionType.MultipleValue);
                 var topicName = p.Option("-t|--topic <TOPIC>", "Topic name from where the snapshot will be extracted", CommandOptionType.SingleOrNoValue);
                 var preserveArg = p.Option("-p|--preserve <PRESERVE>", "Preserve the timestamp in the snapshot", CommandOptionType.SingleOrNoValue);
-                var fileName = p.Argument("file", "Relative or absolute path to a DAT file with topic snapshot").IsRequired();                
+                var fileName = p.Argument("file", "Relative or absolute path to a DAT file with topic snapshot").IsRequired();
+
 
                 p.OnExecuteAsync(async cancellationToken =>
                 {
@@ -152,13 +153,13 @@ namespace Kafker
         private static async Task<KafkaTopicConfiguration> InitKafkaTopicConfiguration(KafkerSettings kafkerSettings, CommandOption configName,
             CommandOption brokers = null, CommandOption topicName = null, CommandOption eventsToRead = null, CommandOption offSetKind = null)
         {
-            var eventToRead = eventsToRead.HasValue() ? uint.Parse(eventsToRead.Value()) : (uint?) null;
-            var offset = offSetKind.HasValue() ? (OffsetKind?) Enum.Parse(typeof(OffsetKind), offSetKind.Value(), true) : null;
+            uint? events = eventsToRead == null ? null : eventsToRead.HasValue() ? uint.Parse(eventsToRead.Value()) : (uint?) null;
+            OffsetKind? offset = offSetKind == null ? null : offSetKind.HasValue() ? (OffsetKind?) Enum.Parse(typeof(OffsetKind), offSetKind.Value(), true) : null;
             var readConfigurationAsync = await ExtractorHelper.GetConfiguration(kafkerSettings,
                 configName.Value(),
                 brokers.Value(),
                 topicName.Value(),
-                eventToRead,
+                events,
                 offset);
             return readConfigurationAsync;
         }
