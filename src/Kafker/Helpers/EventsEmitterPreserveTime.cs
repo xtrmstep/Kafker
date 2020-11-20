@@ -26,9 +26,8 @@ namespace Kafker.Helpers
             _settings = settings;
         }
 
-        public override async Task<int> EmitEvents(CancellationToken cancellationToken, string fileName, string topic)
+        public override async Task<int> EmitEvents(CancellationToken cancellationToken, KafkaTopicConfiguration cfg, string fileName)
         {
-            var cfg = await ExtractorHelper.ReadConfigurationAsync(topic, _settings, _console);
             var topicProducer = _producerFactory.Create(cfg);
 
             try

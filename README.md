@@ -107,9 +107,31 @@ You can check which topic configurations you have:
 
 Now let's extract events from the topic:
 
+1. ###### Extract event with config file.
+
+You can extract events from topic either by specifying a config file as shown below:
+
 ```bash
-./kafker.exe extract -t source-topic
+./kafker.exe extract -cfg:source-config
 ```
+
+Additionally you are allowed to override the configuration of the source-config as shown below:
+
+```
+./kafker.exe extract -cfg:source-config -n:10
+```
+
+Note: You can either override all or as many as you want arguments. 
+
+2. ###### Extract event without additional config file.
+
+You can directly specify the configuration
+
+```bash
+./kafker.exe extract -b:source-brokers -t:source-topic -n:number-of-events -o:offset
+```
+
+Note: When you specify the configuration straight from the console keep in mind that the topic source is mandatory and should be specified, the rest of the arguments are optional. If omitted their default value will be used.
 
 This command will read the config file, read certain number of events (press Ctrl+C to break the operation earlier if you need). When it's finished in the destination folder (defined in the `appsetting.json`) you'll find a DAT file. The name of the file will have configuration's name and timestamp in its name (e.g., `source-topic_20200825_054112.dat`).
 

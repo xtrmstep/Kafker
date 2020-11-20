@@ -21,9 +21,8 @@ namespace Kafker.Helpers
             _settings = settings;
         }
         
-        public virtual async Task<int> EmitEvents(CancellationToken cancellationToken,string filename,string topic)
+        public virtual async Task<int> EmitEvents(CancellationToken cancellationToken, KafkaTopicConfiguration cfg, string filename)
         {
-            var cfg = await ExtractorHelper.ReadConfigurationAsync(topic, _settings, _console);
             var producedEvents = 0;
             using var topicProducer = _producerFactory.Create(cfg);
 

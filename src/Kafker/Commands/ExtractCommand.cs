@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System.Collections.Generic;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Kafker.Configurations;
@@ -26,19 +27,18 @@ namespace Kafker.Commands
             _settings = settings;
         }
 
-        public async Task<int> InvokeAsync(CancellationToken cancellationToken, string topic)
+        public async Task<int> InvokeAsync(CancellationToken cancellationToken, KafkaTopicConfiguration configuration)
         {
-            var cfg = await ExtractorHelper.ReadConfigurationAsync(topic, _settings, _console);
-            var destinationCsvFile = GetDestinationCsvFilename(topic, _settings, _fileTagProvider);
-
+            
+            var destinationCsvFile = GetDestinationCsvFilename(_settings.ConfigurationFolder, _settings, _fileTagProvider);
             var totalNumberOfConsumedEvents = 0;
-            using var topicConsumer = _consumerFactory.Create(cfg);
+            using var topicConsumer = _consumerFactory.Create(configuration);
             await using var fileStream = new FileStream(destinationCsvFile.FullName, FileMode.Append, FileAccess.Write);
             await using var streamWriter = new StreamWriter(fileStream);
             try
             {
                 var numberOfReadEvents = 0;
-                var totalEventsToRead = cfg.EventsToRead; // 0 - infinite
+                var totalEventsToRead = configuration.EventsToRead; // 0 - infinite
                 totalNumberOfConsumedEvents = 0;
                 while (!cancellationToken.IsCancellationRequested)
                 {
@@ -55,7 +55,7 @@ namespace Kafker.Commands
                     numberOfReadEvents++;
                     var message = JObject.Parse(consumeResult.Message.Value).ToString(Formatting.None);
                     await streamWriter.WriteLineAsync($"{consumeResult.Message.Timestamp.UnixTimestampMs}|{message}");
-                    
+
                     if (totalEventsToRead > 0)
                         await _console.Out.WriteAsync($"\rloaded {numberOfReadEvents}/{totalEventsToRead}...");
                     else
@@ -66,11 +66,12 @@ namespace Kafker.Commands
                         break;
                 }
             }
-                    
+
             finally
             {
                 await _console.Out.WriteLineAsync($"\n\rConsumed {totalNumberOfConsumedEvents} events");
             }
+
             return await Task.FromResult(0).ConfigureAwait(false); // ok
         }
 
