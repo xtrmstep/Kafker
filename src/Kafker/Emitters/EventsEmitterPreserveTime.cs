@@ -66,11 +66,12 @@ namespace Kafker.Emitters
                 
                 producer.ProduceAsync(item).GetAwaiter().GetResult();
                 Interlocked.Increment(ref ProducedEvents);
+                //await _console.Out.WriteAsync($"\rproduced {++idx / total * 100:f2}% [{idx:f0}/{total:f0}]");
             }
         }
 
         /// <inheritdoc />
-        protected override async Task PrivateEmitEvents(CancellationToken cancellationToken, string fileName, RecordsProducer topicProducer)
+        protected override async Task PrivateEmitEvents(CancellationToken cancellationToken, string fileName, RecordsProducer topicProducer, uint eventsToRead)
         {
             var events = await LoadEventsFromFileAsync(fileName);
             var eventsByTime = GroupEventsByTime(events);

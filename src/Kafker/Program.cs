@@ -43,14 +43,14 @@ namespace Kafker
                 var configArg = p.Option("-cfg|--config <CONFIG>", "Configuration file", CommandOptionType.SingleValue);
                 var brokers = p.Option("-b|--broker <BROKER>", "Broker", CommandOptionType.MultipleValue);
                 var topicName = p.Option("-t|--topic <TOPIC>", "Topic name from where the snapshot will be extracted", CommandOptionType.SingleValue);
-                var eventsToRead = p.Option<uint>("-n|--number <NUMBER>", "Number of events to read", CommandOptionType.SingleValue);
+                var eventsToExtract = p.Option<uint>("-n|--number <NUMBER>", "Number of events to extract", CommandOptionType.SingleValue);
                 var offSetKind = p.Option<OffsetKind>("-o|--offset <OFFSET>", "Option to read Kafka topic from earliest or only new events", CommandOptionType.SingleValue);
 
                 p.OnExecuteAsync(async cancellationToken =>
                 {
                     try
                     {
-                        var readConfigurationAsync = await InitKafkaTopicConfiguration(kafkerSettings, configArg, brokers, topicName, eventsToRead, offSetKind);
+                        var readConfigurationAsync = await InitKafkaTopicConfiguration(kafkerSettings, configArg, brokers, topicName, eventsToExtract, offSetKind);
                         var extractCommand = services.GetService<IExtractCommand>();
                         return await extractCommand.InvokeAsync(cancellationToken, readConfigurationAsync).ConfigureAwait(false);
                     }
@@ -94,6 +94,7 @@ namespace Kafker
                 var configArg = p.Option("-cfg|--config <CONFIG>", "Configuration file", CommandOptionType.SingleValue);
                 var brokers = p.Option("-b|--broker <BROKER>", "Broker", CommandOptionType.MultipleValue);
                 var topicName = p.Option("-t|--topic <TOPIC>", "Topic name from where the snapshot will be extracted", CommandOptionType.SingleValue);
+                var eventsToEmit = p.Option<uint>("-n|--number <NUMBER>", "Number of events to emit", CommandOptionType.SingleValue);
                 var preserveArg = p.Option("-p|--preserve <PRESERVE>", "Preserve the timestamp in the snapshot", CommandOptionType.NoValue);
                 var fileName = p.Argument("file", "Relative or absolute path to a DAT file with topic snapshot").IsRequired();
 
@@ -106,7 +107,7 @@ namespace Kafker
                     services = CreateServiceProvider(kafkerSettings, addEventsEmitterService);
                     var emitCommand = services.GetService<IEmitCommand>();
 
-                    var readConfigurationAsync = await InitKafkaTopicConfiguration(kafkerSettings, configArg, brokers, topicName);
+                    var readConfigurationAsync = await InitKafkaTopicConfiguration(kafkerSettings, configArg, brokers, topicName, eventsToEmit);
                     return await emitCommand.InvokeAsync(cancellationToken, readConfigurationAsync, fileName.Value);
                 });
             });
@@ -148,9 +149,9 @@ namespace Kafker
         }
 
         private static async Task<KafkaTopicConfiguration> InitKafkaTopicConfiguration(KafkerSettings kafkerSettings, CommandOption configName,
-            CommandOption brokers = null, CommandOption topicName = null, CommandOption<uint> eventsToRead = null, CommandOption<OffsetKind> offSetKind = null)
+            CommandOption brokers = null, CommandOption topicName = null, CommandOption<uint> eventsToExtract = null, CommandOption<OffsetKind> offSetKind = null)
         {
-            var events = eventsToRead != null && eventsToRead.HasValue() ? eventsToRead.ParsedValue : (uint?) null;
+            var events = eventsToExtract != null && eventsToExtract.HasValue() ? eventsToExtract.ParsedValue : (uint?) null;
             var offset = offSetKind != null && offSetKind.HasValue() ? offSetKind.ParsedValue : (OffsetKind?)null;
 
             var readConfigurationAsync = await ExtractorHelper.GetConfiguration(kafkerSettings,
