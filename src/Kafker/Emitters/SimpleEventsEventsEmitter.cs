@@ -15,6 +15,7 @@ namespace Kafker.Emitters
         private readonly IProducerFactory _producerFactory;
         private readonly KafkerSettings _settings;
         protected int ProducedEvents = 0;
+        protected uint EventsToEmit = 0;
 
         public SimpleEventsEventsEmitter(IConsole console, IProducerFactory producerFactory,KafkerSettings settings)
         {
@@ -47,8 +48,17 @@ namespace Kafker.Emitters
             }            
         }
 
-        protected virtual async Task PrivateEmitEvents(CancellationToken cancellationToken, string fileName, RecordsProducer topicProducer, uint eventsToRead)
+        protected async Task ReportProgress()
         {
+            if (EventsToEmit == 0)
+                await _console.Out.WriteAsync($"\remitting {ProducedEvents}...");
+            else
+                await _console.Out.WriteAsync($"\remitting {ProducedEvents / (double) EventsToEmit * 100:f2}% [{ProducedEvents}/{EventsToEmit}]...");
+        }
+
+        protected virtual async Task PrivateEmitEvents(CancellationToken cancellationToken, string fileName, RecordsProducer topicProducer, uint limitEventsNumber)
+        {
+            EventsToEmit = limitEventsNumber;
             using var reader = new StreamReader(fileName);
             string line;
             while ((line = await reader.ReadLineAsync()) != null)
@@ -59,15 +69,11 @@ namespace Kafker.Emitters
                 var jsonText = pair[1].Substring(1, pair[1].Length - 2);
                 await topicProducer.ProduceAsync(jsonText);
                 ProducedEvents++;
-                
-                // inform about progress
-                if (eventsToRead == 0)
-                    await _console.Out.WriteAsync($"\remitting {ProducedEvents}...");
-                else
-                    await _console.Out.WriteAsync($"\remitting {ProducedEvents / (double)eventsToRead * 100:f2}% [{ProducedEvents}/{eventsToRead}]...");
+
+                await ReportProgress();
                 
                 // exit if read required number of events
-                if (eventsToRead != 0 && ProducedEvents >= eventsToRead) break;
+                if (EventsToEmit != 0 && ProducedEvents >= EventsToEmit) break;
             }
         }
     }
