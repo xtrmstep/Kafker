@@ -29,5 +29,5 @@ jobs:
     - name: Upload a Build Artifact
       uses: actions/upload-artifact@v2.2.1
       with:
-        name: kafker-win-x64.zip
+        name: kafker-win-x64
         path: ./out
