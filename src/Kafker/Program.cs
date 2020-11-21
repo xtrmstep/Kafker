@@ -155,7 +155,7 @@ namespace Kafker
         {
             var events = eventsToRead != null && eventsToRead.HasValue() ? uint.Parse(eventsToRead.Value()) : (uint?) null;
             OffsetKind? offset = offSetKind != null && offSetKind.HasValue() ? (OffsetKind?) Enum.Parse(typeof(OffsetKind), offSetKind.Value(), true) : null;
-            
+
             var readConfigurationAsync = await ExtractorHelper.GetConfiguration(kafkerSettings,
                 configName.Value(),
                 brokers.Value(),
@@ -191,11 +191,13 @@ namespace Kafker
         {
             environment ??= "Development";
             var env = environment.ToLowerInvariant();
+            var basePath = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
             var builder = new ConfigurationBuilder()
-                .SetBasePath(Directory.GetCurrentDirectory())
+                .SetBasePath(basePath)
                 .AddJsonFile("appsettings.json", true, true)
                 .AddJsonFile($"appsettings.{env}.json", true, true);
             var configuration = builder.Build();
+
             return configuration;
         }
     }
