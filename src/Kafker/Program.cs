@@ -1,9 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
 using System.IO;
-using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Threading.Tasks;
 using Kafker.Commands;
 using Kafker.Configurations;
@@ -99,7 +97,6 @@ namespace Kafker
                 var preserveArg = p.Option("-p|--preserve <PRESERVE>", "Preserve the timestamp in the snapshot", CommandOptionType.SingleOrNoValue);
                 var fileName = p.Argument("file", "Relative or absolute path to a DAT file with topic snapshot").IsRequired();
 
-
                 p.OnExecuteAsync(async cancellationToken =>
                 {
                     // define services for emitter
@@ -137,7 +134,9 @@ namespace Kafker
 
             try
             {
-                return await app.ExecuteAsync(args).ConfigureAwait(false);
+                var source = new CancellationTokenSource();
+                PhysicalConsole.Singleton.CancelKeyPress += (sender, args) => source.Cancel();
+                return await app.ExecuteAsync(args, source.Token).ConfigureAwait(false);
             }
             catch (Exception e)
             {
