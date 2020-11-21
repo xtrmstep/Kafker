@@ -9,7 +9,7 @@ using McMaster.Extensions.CommandLineUtils;
 
 namespace Kafker.Emitters
 {
-    public class SimpleEventsEventsEmitter : IEventsEmitter
+    public class SimpleEventsEmitter : IEventsEmitter
     {
         private readonly IConsole _console;
         private readonly IProducerFactory _producerFactory;
@@ -17,7 +17,7 @@ namespace Kafker.Emitters
         protected int ProducedEvents = 0;
         protected uint EventsToEmit = 0;
 
-        public SimpleEventsEventsEmitter(IConsole console, IProducerFactory producerFactory,KafkerSettings settings)
+        public SimpleEventsEmitter(IConsole console, IProducerFactory producerFactory,KafkerSettings settings)
         {
             _console = console;
             _producerFactory = producerFactory;

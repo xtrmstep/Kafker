@@ -10,19 +10,13 @@ using McMaster.Extensions.CommandLineUtils;
 
 namespace Kafker.Emitters
 {
-    public class EventsEmitterPreserveTime : SimpleEventsEventsEmitter
+    public class TimelyEventsEmitter : SimpleEventsEmitter
     {
         static volatile bool _startEvent = false;
-        private readonly IConsole _console;
-        private static IProducerFactory _producerFactory;
-        private readonly KafkerSettings _settings;
 
-        public EventsEmitterPreserveTime(IConsole console, IProducerFactory producerFactory,
+        public TimelyEventsEmitter(IConsole console, IProducerFactory producerFactory,
             KafkerSettings settings) : base(console, producerFactory, settings)
         {
-            _console = console;
-            _producerFactory = producerFactory;
-            _settings = settings;
         }        
 
         private static async Task<List<Tuple<long, string>>> LoadEventsFromFileAsync(string fileName, uint eventsToRead)

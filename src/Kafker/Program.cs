@@ -102,8 +102,8 @@ namespace Kafker
                 {
                     // define services for emitter
                     var addEventsEmitterService = preserveArg.HasValue()
-                        ? (Action<IServiceCollection>) (collection => collection.AddSingleton<IEventsEmitter, EventsEmitterPreserveTime>())
-                        : collection => collection.AddSingleton<IEventsEmitter, SimpleEventsEventsEmitter>();
+                        ? (Action<IServiceCollection>) (collection => collection.AddSingleton<IEventsEmitter, TimelyEventsEmitter>())
+                        : collection => collection.AddSingleton<IEventsEmitter, SimpleEventsEmitter>();
                     services = CreateServiceProvider(kafkerSettings, addEventsEmitterService);
                     var emitCommand = services.GetService<IEmitCommand>();
 
