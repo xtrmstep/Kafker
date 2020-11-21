@@ -30,7 +30,7 @@ namespace Kafker.Commands
 
         public async Task<int> InvokeAsync(CancellationToken cancellationToken, KafkaTopicConfiguration configuration)
         {
-            var destinationCsvFile = GetDestinationCsvFilename(_settings.ConfigurationFolder, _settings, _fileTagProvider);
+            var destinationCsvFile = GetDestinationCsvFilename(configuration.Topic, _settings, _fileTagProvider);
             var totalNumberOfConsumedEvents = 0;
             using var topicConsumer = _consumerFactory.Create(configuration);
             await using var fileStream = new FileStream(destinationCsvFile.FullName, FileMode.Append, FileAccess.Write);
