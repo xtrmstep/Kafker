@@ -24,4 +24,13 @@ jobs:
     - name: Install dependencies
       run: dotnet restore ./src/Kafker/Kafker.csproj
     - name: Build
-      run: dotnet build ./src/Kafker/Kafker.csproj -c Release --no-restore
+      run: dotnet build ./src/Kafker/Kafker.csproj -c Release --no-restore -o out
+    - name: action-zip
+      uses: montudor/action-zip@v0.1.1
+      with:
+        args: zip -qq -r release.zip out
+    - name: Upload a Build Artifact
+      uses: actions/upload-artifact@v2.2.1
+      with:
+        name: kafker-win
+        path: release.zip
