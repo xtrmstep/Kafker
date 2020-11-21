@@ -113,8 +113,4 @@ Snapshots could be converted to CSV files for analysis. Kafker will try to parse
 
 If the mapping is specified in the topic confgiuration, Kafker will narrow down the number of fields and use names from the mapping.
 
-## Usage Scenario
-
-
-
 That's it.
