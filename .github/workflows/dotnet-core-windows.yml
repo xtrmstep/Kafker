@@ -22,8 +22,8 @@ jobs:
       with:
         dotnet-version: 3.1.403
     - name: Install dependencies
-      run: dotnet restore
-    - name: Build
-      run: dotnet build --configuration Release --no-restore
-    - name: Test
-      run: dotnet test --no-restore --verbosity normal
+      run: dotnet restore ./src/Kafker/Kafker.csproj
+    - name: Build x86
+      run: dotnet build ./src/Kafker/Kafker.csproj -c Release --no-restore -o ./out --self-contained -r win-x86
+    - name: Build x64
+      run: dotnet build ./src/Kafker/Kafker.csproj -c Release --no-restore -o ./out --self-contained -r win-x64
