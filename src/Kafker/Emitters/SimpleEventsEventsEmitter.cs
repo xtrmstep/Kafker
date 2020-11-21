@@ -25,6 +25,11 @@ namespace Kafker.Emitters
         
         public async Task<int> EmitEvents(CancellationToken cancellationToken, KafkaTopicConfiguration cfg, string fileName)
         {
+            Func<Task> writeProducedEvents = async () => await _console.Out.WriteLineAsync($"\r\nProduced {ProducedEvents} events");
+
+            _console.CancelKeyPress += (sender, args) => writeProducedEvents().GetAwaiter().GetResult();
+            await _console.Out.WriteLineAsync("Press CTRL+C to interrupt the read operation");
+            
             using var topicProducer = _producerFactory.Create(cfg);
             try
             {
@@ -38,7 +43,7 @@ namespace Kafker.Emitters
             }
             finally
             {
-                await _console.Out.WriteLineAsync($"\r\nProduced {ProducedEvents} events");
+                await writeProducedEvents();
             }            
         }
 
