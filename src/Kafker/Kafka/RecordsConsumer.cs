@@ -24,7 +24,7 @@ namespace Kafker.Kafka
             var consumerConfig = new ConsumerConfig
             {
                 BootstrapServers = string.Join(',', config.Brokers),
-                GroupId = $"kafka_topic_extractor_{consumerGroupTag}",
+                GroupId = $"kafker_{consumerGroupTag}",
                 EnableAutoCommit = true,
                 StatisticsIntervalMs = 5000,
                 SessionTimeoutMs = 6000,
