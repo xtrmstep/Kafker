@@ -18,33 +18,42 @@ namespace Kafker.Commands
             
         }
 
-        public async Task<int> InvokeAsync(CancellationToken cancellationToken, string templateName)
+        public async Task<int> InvokeAsync(CancellationToken cancellationToken, string configName)
         {
-            templateName ??= "template";
-            await CreateCfgMapTemplateAsync(templateName);
+            configName ??= "template";
+            await CreateConfigurationFileAsync(configName, cancellationToken);
 
             return await Task.FromResult(Constants.RESULT_CODE_OK).ConfigureAwait(false);
         }
 
-        private async Task CreateCfgMapTemplateAsync(string templateName)
+        private async Task CreateConfigurationFileAsync(string configName, CancellationToken cancellationToken)
         {
-            var path = GetFilename(templateName, "cfg");
+            var path = GetFilename(configName, "cfg");
             var brokerAddress = $@"[""{string.Join("\",\"", _settings.Brokers)}""]";
-            var template = @"{
-    Brokers : {broker-address},
-    Topic : ""topic-name"",
+            var template = $@"{{
+    Brokers : {brokerAddress},
+    Topic : ""{configName}"",
     EventsToRead : 0|N,
     OffsetKind : ""Latest|Earliest"",
-    Mapping : {
+    Mapping : {{
         ""Property"" : ""destination_property_name"",
         ""Node.Property"" : ""destination_property_of_nested_type"",
         ""Node.Array[1]"" : ""destination_property_of_array_element""   
-        }
-}";
-            string templateWithConfig = template.Replace("{broker-address}", brokerAddress);    
-            
-            await File.WriteAllTextAsync(path, templateWithConfig);
-            
+        }}
+}}";
+            if (File.Exists(path))
+            {
+                await _console.Out.WriteAsync($"File already exists [{path}]. Overwrite? [y|n]");
+                var chars = new char[1];
+                await _console.In.ReadAsync(chars, cancellationToken);
+                if (chars[0].ToString().ToUpper() != "Y")
+                {
+                    await _console.Out.WriteLineAsync($"Cancelling operation");
+                    return;
+                }
+            }
+            await File.WriteAllTextAsync(path, template, cancellationToken);
+            await _console.Out.WriteLineAsync($"Created: {path}");
         }
 
         private string GetFilename(string templateName, string extension)
