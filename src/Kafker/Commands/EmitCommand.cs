@@ -27,6 +27,8 @@ namespace Kafker.Commands
         {
             try
             {
+                await _console.Out.WriteLineAsync("Press CTRL+C to interrupt the read operation");
+                
                 await _eventsEmitter.EmitEvents(cancellationToken, kafkaTopicConfiguration, fileName);
                 return await Task.FromResult(Constants.RESULT_CODE_OK).ConfigureAwait(false);
             }

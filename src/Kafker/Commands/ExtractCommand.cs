@@ -34,7 +34,12 @@ namespace Kafker.Commands
             var totalNumberOfConsumedEvents = 0;
             using var topicConsumer = _consumerFactory.Create(configuration);
             await using var fileStream = new FileStream(destinationCsvFile.FullName, FileMode.Append, FileAccess.Write);
-            await using var streamWriter = new StreamWriter(fileStream);
+            await using var streamWriter = new StreamWriter(fileStream) {AutoFlush = true};
+            
+            Func<Task> writeConsumedEvents = async () => await _console.Out.WriteLineAsync($"\n\rConsumed {totalNumberOfConsumedEvents} events");
+
+            _console.CancelKeyPress += (sender, args) => writeConsumedEvents().GetAwaiter().GetResult();
+            await _console.Out.WriteLineAsync("Press CTRL+C to interrupt the read operation");
             
             try
             {
@@ -75,8 +80,8 @@ namespace Kafker.Commands
             }
             finally
             {
-                await _console.Out.WriteLineAsync($"\n\rConsumed {totalNumberOfConsumedEvents} events");
-            }
+                await writeConsumedEvents();
+            }            
         }
 
         internal static FileInfo GetDestinationCsvFilename(string topic, KafkerSettings setting,
