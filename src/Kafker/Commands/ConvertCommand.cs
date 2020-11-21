@@ -22,17 +22,15 @@ namespace Kafker.Commands
         }
 
 
-        public async Task<int> InvokeAsync(CancellationToken cancellationToken, string fileName, string topic)
+        public async Task<int> InvokeAsync(CancellationToken cancellationToken, string fileName, KafkaTopicConfiguration topicConfiguration)
         {
             try
             {
-                var kafkaTopicConfiguration = topic == null ? null : await ExtractorHelper.ReadTopicConfigurationAsync(topic, _settings, _console);
-
                 var snapshotFilePath = ExtractorHelper.GetAbsoluteFilePath(fileName, _settings.Destination);
                 if (snapshotFilePath == null)
                     throw new FileNotFoundException("File cannot be found", fileName);
 
-                var csvConverter = new SnapshotCsvConverter(kafkaTopicConfiguration);
+                var csvConverter = new SnapshotCsvConverter(topicConfiguration);
                 await csvConverter.ConvertAndSaveAsync(snapshotFilePath);
                 await _console.Out.WriteLineAsync($"\r\nConversion completed");
                 

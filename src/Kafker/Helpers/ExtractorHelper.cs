@@ -42,7 +42,6 @@ namespace Kafker.Helpers
         public static async Task<KafkaTopicConfiguration> CreateTopicConfiguration(KafkerSettings settings,
             string configName, string brokers, string topic, uint? eventToRead, OffsetKind? offset)
         {
-            
             var conf = !string.IsNullOrWhiteSpace(configName) 
                 ? await ReadTopicConfigurationAsync(configName, settings, PhysicalConsole.Singleton)
                 : new KafkaTopicConfiguration
@@ -63,11 +62,7 @@ namespace Kafker.Helpers
                 conf.EventsToRead = eventToRead.Value;
             
             if (offset.HasValue)
-                conf.OffsetKind = offset.Value;
-            
-            // validation
-            if (!conf.Brokers.Any()) throw new ArgumentException("Brokers are required", nameof(KafkaTopicConfiguration.Brokers));
-            if (string.IsNullOrWhiteSpace(conf.Topic)) throw new ArgumentException("Topic is required", nameof(KafkaTopicConfiguration.Topic));
+                conf.OffsetKind = offset.Value;            
             
             return conf;
         }

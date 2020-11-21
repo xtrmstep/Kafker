@@ -12,81 +12,75 @@ namespace Kafker.Helpers
 {
     public class SnapshotCsvConverter
     {
-        private DataTable _tbl = new DataTable();
-        private readonly KafkaTopicConfiguration _mapConfig;
+        private readonly IDictionary<string, string> _csvMapping;
 
-        public SnapshotCsvConverter(KafkaTopicConfiguration mapConfig)
+        public SnapshotCsvConverter(KafkaTopicConfiguration topicConfiguration)
         {
-            _mapConfig = mapConfig ?? new KafkaTopicConfiguration();
+            _csvMapping = topicConfiguration != null ? topicConfiguration.Mapping : new Dictionary<string, string>();
         }
 
-        private void Convert(JObject json)
-        {
+        private void AddTableRow(DataTable dataTable, JObject json)
+        {            
             var dic = json.Flatten();
             var columns = new List<string>(dic.Keys);
-            var row = _tbl.NewRow();
+            var row = dataTable.NewRow();
             // add missing columns
             foreach (var column in columns)
             {
-                var mapNotNullAndKeyExists = _mapConfig.Mapping.Any() && _mapConfig.Mapping.ContainsKey(column);
+                var mapNotNullAndKeyExists = _csvMapping.Any() && _csvMapping.ContainsKey(column);
                 var renamedColumnName = column;
                 if (mapNotNullAndKeyExists)
                 {
-                    renamedColumnName = _mapConfig.Mapping[column];
+                    renamedColumnName = _csvMapping[column];
                 }
 
-                if (!_tbl.Columns.Contains(renamedColumnName))
+                if (!dataTable.Columns.Contains(renamedColumnName))
                 {
-                    var shouldAddColumn = !_mapConfig.Mapping.Any() || mapNotNullAndKeyExists;
+                    var shouldAddColumn = !_csvMapping.Any() || mapNotNullAndKeyExists;
                     if (!shouldAddColumn) continue;
 
                     var dataColumn = new DataColumn(renamedColumnName, typeof(object));
-                    _tbl.Columns.Add(dataColumn);
+                    dataTable.Columns.Add(dataColumn);
                 }
-
                 row[renamedColumnName] = dic[column];
             }
-
-            _tbl.Rows.Add(row);
+            dataTable.Rows.Add(row);
         }
 
-        private async Task SaveToFileAsync(FileInfo destinationCsvFile)
+        private async Task SaveTableToFileAsync(DataTable dataTable, string destinationCsvFile)
         {
             await Task.Yield();
-            CSVLibraryAK.Core.CSVLibraryAK.Export(destinationCsvFile.FullName, _tbl);
+            CSVLibraryAK.Core.CSVLibraryAK.Export(destinationCsvFile, dataTable);
         }
 
-        private async Task LoadFromFileAsync(string sourceFile)
+        private async Task<List<JObject>> LoadFromSnapshotAsync(string sourceFile)
         {
-            await Task.Yield();
-            var list = new List<JObject>();
             var lines = await File.ReadAllLinesAsync(sourceFile);
-            foreach (var line in lines)
-            {
-                var pair = line.Split("|");
-                //var timestamp = pair[0].Substring(1, pair[0].Length - 2);
-                var record = pair[1].Substring(1, pair[1].Length - 2);
-                JObject json = JsonConvert.DeserializeObject<JObject>(record,
-                    new JsonSerializerSettings {DateParseHandling = DateParseHandling.None});
-                list.Add(json);
-            }
+            var list = lines
+                .Select(line => line.Split("|")[1])
+                .Select(record => JsonConvert.DeserializeObject<JObject>(record, 
+                    new JsonSerializerSettings {DateParseHandling = DateParseHandling.None}))
+                .ToList();
 
-            ConvertListToDataTable(list);
+            return list;
         }
 
-        private void ConvertListToDataTable(List<JObject> list)
+        private DataTable LoadJsonsToTable(IList<JObject> list)
         {
+            var tbl = new DataTable();
             foreach (var item in list)
             {
-                Convert(item);
+                AddTableRow(tbl, item);
             }
+            return tbl;
         }
 
         public async Task ConvertAndSaveAsync(string fileName)
         {
-            var destinationFile = new FileInfo($"{fileName.Replace(".dat", "")}.csv");
-            await LoadFromFileAsync(fileName);
-            await SaveToFileAsync(destinationFile);
+            var destinationFile = fileName.Replace(".dat", ".csv");
+            var listOfJson = await LoadFromSnapshotAsync(fileName);
+            var tbl = LoadJsonsToTable(listOfJson);
+            await SaveTableToFileAsync(tbl, destinationFile);
         }
     }
 }

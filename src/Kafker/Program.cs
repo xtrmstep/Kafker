@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -50,9 +51,14 @@ namespace Kafker
                 {
                     try
                     {
-                        var readConfigurationAsync = await InitKafkaTopicConfiguration(kafkerSettings, config, brokers, topic, eventsToExtract, offset);
+                        var conf = await InitKafkaTopicConfigurationAsync(kafkerSettings, config, brokers, topic, eventsToExtract, offset);
+                        
+                        // validation
+                        if (!conf.Brokers.Any()) throw new ArgumentException("Brokers are required", nameof(KafkaTopicConfiguration.Brokers));
+                        if (string.IsNullOrWhiteSpace(conf.Topic)) throw new ArgumentException("Topic is required", nameof(KafkaTopicConfiguration.Topic));
+                        
                         var extractCommand = services.GetService<IExtractCommand>();
-                        return await extractCommand.InvokeAsync(cancellationToken, readConfigurationAsync).ConfigureAwait(false);
+                        return await extractCommand.InvokeAsync(cancellationToken, conf).ConfigureAwait(false);
                     }
                     catch (Exception err)
                     {
@@ -106,8 +112,13 @@ namespace Kafker
                     services = CreateServiceProvider(kafkerSettings, addEventsEmitterService);
                     var emitCommand = services.GetService<IEmitCommand>();
 
-                    var readConfigurationAsync = await InitKafkaTopicConfiguration(kafkerSettings, config, brokers, topic, eventsToEmit);
-                    return await emitCommand.InvokeAsync(cancellationToken, readConfigurationAsync, fileName.Value);
+                    var conf = await InitKafkaTopicConfigurationAsync(kafkerSettings, config, brokers, topic, eventsToEmit);
+                    
+                    // validation
+                    if (!conf.Brokers.Any()) throw new ArgumentException("Brokers are required", nameof(KafkaTopicConfiguration.Brokers));
+                    if (string.IsNullOrWhiteSpace(conf.Topic)) throw new ArgumentException("Topic is required", nameof(KafkaTopicConfiguration.Topic));
+                    
+                    return await emitCommand.InvokeAsync(cancellationToken, conf, fileName.Value);
                 });
             });
 
@@ -115,13 +126,14 @@ namespace Kafker
             {
                 p.Description = "Convert snapshot to a CSV file";
 
-                var configOption = CommandOptionsFactory.ConfigOption(p);
+                var config = CommandOptionsFactory.ConfigOption(p);
                 var fileName = CommandOptionsFactory.FileArgument(p);
 
                 p.OnExecuteAsync(async cancellationToken =>
                 {
+                    var topicConfiguration = await InitKafkaTopicConfigurationAsync(kafkerSettings, config);
                     var convertCommand = services.GetService<IConvertCommand>();
-                    return await convertCommand.InvokeAsync(cancellationToken, fileName.Value, configOption.Value());
+                    return await convertCommand.InvokeAsync(cancellationToken, fileName.Value, topicConfiguration);
                 });
             });
 
@@ -147,7 +159,7 @@ namespace Kafker
             return Constants.RESULT_CODE_OK;
         }
 
-        private static async Task<KafkaTopicConfiguration> InitKafkaTopicConfiguration(KafkerSettings kafkerSettings, CommandOption configName,
+        private static async Task<KafkaTopicConfiguration> InitKafkaTopicConfigurationAsync(KafkerSettings kafkerSettings, CommandOption configName,
             CommandOption brokers = null, CommandOption topicName = null, CommandOption<uint> eventsToExtract = null, CommandOption<OffsetKind> offSetKind = null)
         {
             var events = eventsToExtract != null && eventsToExtract.HasValue() ? eventsToExtract.ParsedValue : (uint?) null;
@@ -155,8 +167,8 @@ namespace Kafker
 
             var readConfigurationAsync = await ExtractorHelper.CreateTopicConfiguration(kafkerSettings,
                 configName.Value(),
-                brokers.Value(),
-                topicName.Value(),
+                brokers?.Value(),
+                topicName?.Value(),
                 events,
                 offset);
             return readConfigurationAsync;
