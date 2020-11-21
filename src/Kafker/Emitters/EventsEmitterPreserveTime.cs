@@ -32,8 +32,9 @@ namespace Kafker.Emitters
 
             try
             {
-                var mappedEventsWithTimeStamp = await MapEventsWithTimeStamp(fileName);
-                var tasks = mappedEventsWithTimeStamp.Select(x => ScheduleEventsSending(x.Key, x.Value, topicProducer, cancellationToken)).ToArray();
+                var events = await LoadEventsFromFileAsync(fileName);
+                var eventsByTime = GroupEventsByTime(events);
+                var tasks = eventsByTime.Select(x => ScheduleEventsSending(x.Key, x.Value, topicProducer, cancellationToken)).ToArray();
 
                 _startEvent = true;
                 Task.WaitAll(tasks, cancellationToken);
@@ -51,38 +52,20 @@ namespace Kafker.Emitters
             return await Task.FromResult(Constants.RESULT_CODE_OK).ConfigureAwait(false); // ok
         }
 
-        private async Task<List<Tuple<long, string>>> LoadAndSplitSnapshotData(string fileName)
+        private static async Task<List<Tuple<long, string>>> LoadEventsFromFileAsync(string fileName)
         {
             var allLines = await File.ReadAllLinesAsync(fileName);
-            var initialSnapshot = allLines.Select(item => item.Split("|")).Select(pair => new Tuple<long, string>(long.Parse(pair[0].Replace("\"", "")), pair[1])).ToList();
+            var initialSnapshot = allLines.Select(item => item.Split("|")).Select(pair => new Tuple<long, string>(long.Parse(pair[0]), pair[1])).ToList();
 
             return initialSnapshot;
         }
 
-        private async Task<Dictionary<long, List<string>>> MapEventsWithTimeStamp(string fileName)
+        private Dictionary<long, List<string>> GroupEventsByTime(IList<Tuple<long, string>> listOfSnapshotTuples)
         {
-            var listOfSnapshotTuples = await LoadAndSplitSnapshotData(fileName);
-            var timeStampWithEvents = new List<Tuple<long, string>>();
-            var eventsMappedByTime = new Dictionary<long, List<string>>();
-
-            var smallest = listOfSnapshotTuples.Select(x => x.Item1).Min();
-
-            foreach (var (timeStamp, itemToSend) in listOfSnapshotTuples)
-            {
-                timeStampWithEvents.Add(new Tuple<long, string>(timeStamp - smallest, itemToSend));
-            }
-
-            foreach (var (timeStamp, itemToSend) in timeStampWithEvents)
-            {
-                if (!eventsMappedByTime.ContainsKey(timeStamp))
-                {
-                    eventsMappedByTime.Add(timeStamp, new List<string>());
-                }
-
-                eventsMappedByTime[timeStamp].Add(itemToSend);
-            }
-
-            return eventsMappedByTime;
+            var minTime = listOfSnapshotTuples.Select(x => x.Item1).Min();
+            var eventsWithTime = listOfSnapshotTuples.Select(tuple => new Tuple<long, string>(tuple.Item1 - minTime, tuple.Item2)).ToList();
+            var eventsGroupedByTime = eventsWithTime.GroupBy(e => e.Item1, e => e.Item2).ToDictionary(r => r.Key, r => r.ToList());
+            return eventsGroupedByTime;
         }
 
         private static async Task ScheduleEventsSending(long key, List<string> value, RecordsProducer producer, CancellationToken cancellationToken)
