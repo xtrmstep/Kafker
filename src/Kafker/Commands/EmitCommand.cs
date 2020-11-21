@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Kafker.Configurations;
@@ -27,16 +28,23 @@ namespace Kafker.Commands
         {
             try
             {
-                await _eventsEmitter.EmitEvents(cancellationToken, kafkaTopicConfiguration, fileName);
-
+                var snapshotFilePath = ExtractorHelper.GetAbsoluteFilePath(fileName, _settings.Destination);
+                if (snapshotFilePath == null)
+                    throw new FileNotFoundException("File cannot be found", fileName);
+                
+                await _eventsEmitter.EmitEvents(cancellationToken, kafkaTopicConfiguration, snapshotFilePath);
+                return await Task.FromResult(Constants.RESULT_CODE_OK).ConfigureAwait(false);
+            }
+            catch (FileNotFoundException err)
+            {
+                await _console.Error.WriteAsync($"{err.Message}: {err.FileName}");
+                return await Task.FromResult(Constants.RESULT_CODE_ERROR).ConfigureAwait(false);
             }
             catch (Exception err)
             {
                 await _console.Error.WriteLineAsync($"\r\nError: {err.Message}");
-                return await Task.FromResult(1).ConfigureAwait(false); // error
+                return await Task.FromResult(Constants.RESULT_CODE_ERROR).ConfigureAwait(false);
             }
-            
-            return await Task.FromResult(0).ConfigureAwait(false); // ok
         }
     }
 }

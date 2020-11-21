@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Net;
 using System.Net.Security;
 using System.Threading;
@@ -25,33 +26,27 @@ namespace Kafker.Commands
         {
             try
             {
-                var kafkaTopicConfiguration = topic == null ? null : await ExtractorHelper.ReadConfigurationAsync(topic, _settings, _console);
+                var kafkaTopicConfiguration = topic == null ? null : await ExtractorHelper.ReadTopicConfigurationAsync(topic, _settings, _console);
 
-                var isFound = true;
-                var snapshotFilePath = fileName;
-                if (!File.Exists(snapshotFilePath))
-                {
-                    snapshotFilePath = Path.Combine(_settings.Destination, fileName);
-                    if (!File.Exists(snapshotFilePath))
-                    {
-                        isFound = false;
-                        await _console.Out.WriteAsync($"File cannot be found : {fileName}");
-                    }
-                }
-                if (isFound)
-                {
-                    var csvConverter = new SnapshotCsvConverter(kafkaTopicConfiguration);
-                    await csvConverter.ConvertAndSaveAsync(snapshotFilePath);
-                    await _console.Out.WriteLineAsync($"\r\nConversion completed");
-                }
+                var snapshotFilePath = ExtractorHelper.GetAbsoluteFilePath(fileName, _settings.Destination);
+                if (snapshotFilePath == null)
+                    throw new FileNotFoundException("File cannot be found", fileName);
+
+                var csvConverter = new SnapshotCsvConverter(kafkaTopicConfiguration);
+                await csvConverter.ConvertAndSaveAsync(snapshotFilePath);
+                await _console.Out.WriteLineAsync($"\r\nConversion completed");
                 
+                return await Task.FromResult(Constants.RESULT_CODE_OK).ConfigureAwait(false);
+            }
+            catch (FileNotFoundException err)
+            {
+                await _console.Error.WriteAsync($"{err.Message}: {err.FileName}");
+                return await Task.FromResult(Constants.RESULT_CODE_ERROR).ConfigureAwait(false);
             }
             finally
             {
                 await _console.Out.WriteLineAsync($"\r\n");
-            }
-
-            return await Task.FromResult(0).ConfigureAwait(false); // ok
+            }            
         }
     }
 }

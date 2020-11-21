@@ -5,6 +5,6 @@ namespace Kafker.Commands
 {
     public interface ICreateCommand
     {
-        Task<int> InvokeAsync(CancellationToken cancellationToken, string templateName);
+        Task<int> InvokeAsync(CancellationToken cancellationToken, string configName);
     }
 }

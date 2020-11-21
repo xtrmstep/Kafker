@@ -18,7 +18,7 @@ namespace Kafker.Helpers
 
         public string GetTag()
         {
-            return $"{_dateTimeOffset:yyyyMMdd}_{_dateTimeOffset:hhmmss}";
+            return $"{_dateTimeOffset:yyyyMMdd}_{_dateTimeOffset:HHmmss}";
         }
     }
 }
