@@ -16,7 +16,6 @@ namespace Kafker.Emitters
         private readonly IConsole _console;
         private static IProducerFactory _producerFactory;
         private readonly KafkerSettings _settings;
-        private static int _producedEvents = 0;
 
         public EventsEmitterPreserveTime(IConsole console, IProducerFactory producerFactory,
             KafkerSettings settings) : base(console, producerFactory, settings)
@@ -24,33 +23,7 @@ namespace Kafker.Emitters
             _console = console;
             _producerFactory = producerFactory;
             _settings = settings;
-        }
-
-        public override async Task<int> EmitEvents(CancellationToken cancellationToken, KafkaTopicConfiguration cfg, string fileName)
-        {
-            var topicProducer = _producerFactory.Create(cfg);
-
-            try
-            {
-                var events = await LoadEventsFromFileAsync(fileName);
-                var eventsByTime = GroupEventsByTime(events);
-                var tasks = eventsByTime.Select(x => ScheduleEventsSending(x.Key, x.Value, topicProducer, cancellationToken)).ToArray();
-
-                _startEvent = true;
-                Task.WaitAll(tasks, cancellationToken);
-            }
-            catch (Exception e)
-            {
-                await _console.Error.WriteLineAsync(e.Message);
-                throw;
-            }
-            finally
-            {
-                await _console.Out.WriteLineAsync($"\r\nProduced {_producedEvents} events");
-            }
-
-            return await Task.FromResult(Constants.RESULT_CODE_OK).ConfigureAwait(false); // ok
-        }
+        }        
 
         private static async Task<List<Tuple<long, string>>> LoadEventsFromFileAsync(string fileName)
         {
@@ -68,7 +41,7 @@ namespace Kafker.Emitters
             return eventsGroupedByTime;
         }
 
-        private static async Task ScheduleEventsSending(long key, List<string> value, RecordsProducer producer, CancellationToken cancellationToken)
+        private async Task ScheduleEventsSending(long key, List<string> value, RecordsProducer producer, CancellationToken cancellationToken)
         {
             await Task.Yield();
 
@@ -85,15 +58,26 @@ namespace Kafker.Emitters
             }
         }
 
-        private static void EmitEventsOnTime(List<string> list, RecordsProducer producer, CancellationToken cancellationToken)
+        private void EmitEventsOnTime(IList<string> list, RecordsProducer producer, CancellationToken cancellationToken)
         {
             foreach (var item in list)
             {
                 if (cancellationToken.IsCancellationRequested) return;
                 
                 producer.ProduceAsync(item).GetAwaiter().GetResult();
-                _producedEvents++;
+                Interlocked.Increment(ref ProducedEvents);
             }
+        }
+
+        /// <inheritdoc />
+        protected override async Task PrivateEmitEvents(CancellationToken cancellationToken, string fileName, RecordsProducer topicProducer)
+        {
+            var events = await LoadEventsFromFileAsync(fileName);
+            var eventsByTime = GroupEventsByTime(events);
+            var tasks = eventsByTime.Select(x => ScheduleEventsSending(x.Key, x.Value, topicProducer, cancellationToken)).ToArray();
+
+            _startEvent = true;
+            Task.WaitAll(tasks, cancellationToken);
         }
     }
 }

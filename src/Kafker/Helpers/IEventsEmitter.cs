@@ -6,6 +6,6 @@ namespace Kafker.Helpers
 {
     public interface IEventsEmitter
     {
-        Task<int> EmitEvents(CancellationToken cancellationToken, KafkaTopicConfiguration kafkaTopicConfiguration, string filename);
+        Task<int> EmitEvents(CancellationToken cancellationToken, KafkaTopicConfiguration cfg, string fileName);
     }
 }
