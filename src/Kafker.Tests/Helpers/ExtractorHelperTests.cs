@@ -17,7 +17,7 @@ namespace Kafker.Tests.Helpers
             {
                 var dateTimeOffset = new DateTimeOffset(2020, 1, 2, 5, 34, 43, TimeSpan.Zero);
                 var actual = ExtractCommand.GetDestinationCsvFilename("topic", new KafkerSettings(), new FileTagProvider(dateTimeOffset));
-                actual.Name.Should().Be("topic_20200102_053443.csv");
+                actual.Name.Should().Be("topic_20200102_053443.dat");
             }
 
             [Fact]
