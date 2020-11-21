@@ -31,11 +31,11 @@ namespace Kafker.Commands
             var path = GetFilename(configName, "cfg");
             var brokerAddress = $@"[""{string.Join("\",\"", _settings.Brokers)}""]";
             var template = $@"{{
-    Brokers : {brokerAddress},
-    Topic : ""{configName}"",
-    EventsToRead : 0|N,
-    OffsetKind : ""Latest|Earliest"",
-    Mapping : {{
+    ""Brokers"" : {brokerAddress},
+    ""Topic"" : ""{configName}"",
+    ""EventsToRead"" : 0|N,
+    ""OffsetKind"" : ""Latest|Earliest"",
+    ""Mapping"" : {{
         ""Property"" : ""destination_property_name"",
         ""Node.Property"" : ""destination_property_of_nested_type"",
         ""Node.Array[1]"" : ""destination_property_of_array_element""   

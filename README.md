@@ -3,41 +3,54 @@
 Kafker is a CLI tool written on .NET Core. The current version supports only events in JSON format and can do the following operations:
 
 - create a snapshot of a Kafka topic (text .DAT file)
-- emit events from the snapshot to a Kafka topic (in current version regardless to stored message timestamp)
+- emit events from the snapshot to a Kafka topic (can preserve time intervals between messages)
 - convert the snapshot files to CSV files using defined mapping (in current version we rely on [C#.Net Import/Export CSV Library](https://github.com/asmak9/CSVLibraryAK) for .NET Core)
 
-## Configurations
+## Commands
 
-### Reading a Topic
-
-There are several options to read Kafka topic:
-
-- from beginning (earliest)
-- only new events (latest)
-
-In all cases you can specify a number of events to be read. By default the tool reads topic until it's stopped with Ctrl+C.
-
-The simplest command to extract a topic to CSV file is as follows:
+Use help command to get information about command arguments and options.
 
 ```bash
-./kafker.exe --topic topic
+./kafker.exe -?
 ```
 
-This command relies on existing configuration with name `topic`. It will produce a file `topic-<date>-<time>.csv` with serialized events in table form. The configuration should be located in working folder or current folder and consists of following artifacts:
+| Command | Options | Description |
+|---------|---------|-------------|
+|create||Create Kafka topic configuration template|
+||config|It will be the name of configuration file and topic|
+|extract||Read and save JSON events from Kafka topic to a snapshot file (.DAT). It reads text and save to file "AS IS" without transformations. The Kafka message timestamp is stored along the event|
+||config|The name of topic configuration|
+||brokers|Kafka brokers|
+||topic|Kafka topic name|
+||number|Maximum number of extarcted events|
+||offset|Offset of Kafka topic (Earliest or Latest)|
+|emit||Emitting events from snapshot file to Kafka topic in JSON format|
+||config|The topic configuration name|
+||brokers|Kafka brokers|
+||topic|Kafka topic name|
+||number|Maximum number of emitted events|
+||preserve|When set emitting preserves time interval between events. Intervals are calculated from stored timestamps of original messages.|
+|convert||Convert snapshot to CSV file|
+||config|The name of topic configuration with field mapping|
+|list||List existing topic configurations|
 
-- `topic.cfg` - a file with information about Kafka broker endpoints and topic name, offset and other parameters (see below) additionally information about mapping for this topic.
+## Configuration
 
-#### Parameters
+### Kafker Settings
 
-The following command will show all possible commands and options for this CLI.
+The configuration is located in `appsettings.json` file under the section `KafkerSettings`. Kafker has it's own configuration where you need to specify the following settings:
 
-```bash
-./kafker.exe --help
-```
+|Setting|Description|
+|-------|-----------|
+|Destination|Folder with snapshot files |
+|ConfigurationFolder|Folder with topic configuration files|
+|Brokers|Kafka brokers|
 
-Any of this arguments can be used in CFG file to set a default value. If CFG file has a value for a command or option it will be overriden with explicitly specified one in command line.
+Destination and configuration folders could be the same folder. Brokers in this configuration will be used as default brockers for any Kafker commands. 
 
-Example of CFG file:
+### Topic Configuration
+
+It's not required to have a topic configuration to use Kafker. The topic configurations are named and store settings for quick access. Example of CFG file stored in `simple-topic.cfg`:
 
 ```json
 {
@@ -52,114 +65,56 @@ Example of CFG file:
         "Node.Property" : "destination_property_of_nested_type",
         "Node.Array[1]" : "destination_property_of_array_element"   
         }
-    
 }
 ```
 
-### JSON to CSV mapping
-
-The tool will try to parse Kafka event to JSON. It uses [Json.NET](https://www.newtonsoft.com/json), [JsonFlatten](https://github.com/GFoley83/JsonFlatten) and [CsvHelper](https://joshclose.github.io/CsvHelper/).
-
-When message is deserialized to JSON, the tool will try to use provided mapping to keep only specified fields in the result CSV file. If the mapping is not provided, all fields will be included.
-
-Example of the mapping, which describes mapping of nested property to a column:
-
-```json
-{
-  "Mapping": {
-    "Json.Property[0].Name": "column_name_in_csv"
-  }
-}
-```
-
-## Usage Examples
-
-Let's read some topic and send extracted events to another topic. Before using this steps you need to configure `appsetting.json`, specify `ConfigurationFolder` where all configurations will be stored and `Destination` where all snapshot files (extracted topics) will stored.  
-
-### Create templates
+A simple command which uses this topic configuration:
 
 ```bash
-./kafker.exe create source-topic
+$ kafker.exe extract -cfg simple-topic
 ```
 
-This command will create one file: `source-topic.cfg`. In CFG file you need to specify Kafka broker(s) and topic name. Also you may specify number of events to read (`EventsToRead`) and other parameters. In the section `Mapping` you may want to specify a mapping. Let's extract all fields, so that we specify an empty mapping. 
+It will extract 50 events from topic `my-topic` using `Latest` offset. A snapshot file will be created at the folder specified in `Destination` settings of Kafker configuration.
 
-```json
-{
-    Brokers : ["localhost:9092"],
-    Topic : "topic_name",
-    EventsToRead : 10,
-    OffsetKind : "Earliest",
-    Mapping : {
-    }
-}
-```
+#### Mapping
 
-### List all configurations
+The mapping is used for conversion to CSV file. It determines the mapping from properties of JSON (in flatten format) to fields in a CSV file. If the mapping is empty, then all fields will be taken and field names will get flatten property names. If it's specified, it won't include other fields to CSV file.   
 
-You can check which topic configurations you have:
+### Overrides 
+
+Any setting from configuration could be overriden. When you use Kafker without topic configuration, it will connect to Kafka brokers specified in Kafker settings. But you can override brokers and specify other configuration parameters. For example, possible commands to extarct events with overrides:
 
 ```bash
-./kafker.exe list
+# override brokers, topic name, offset and number of events to read
+$ kafker.exe extract -b localhost:9092 -t test -o earliest -n 10
+
+# it's possible to use less options
+$ kafker.exe extract -b localhost:9092 -t test -o earliest
+
+# without topic configuration Kafker need to know which topic to read
+$ kafker.exe extract -t test
+
+# with topic configuration you still can override topic name
+$ kafker.exe extract -cfg simple-topic -t test
+
+# and more...
+$ kafker.exe extract -cfg simple-topic -t test -n 3 -b localhost:9092
 ```
 
-### Snapshot a topic 
-
-Now let's extract events from the topic:
-
-1. ###### Extract event with config file.
-
-You can extract events from topic either by specifying a config file as shown below:
+This command won't be successfull becasue there is no information about Kafka topic and topic configuration is also not specified :
 
 ```bash
-./kafker.exe extract -cfg:source-config
+$ kafker.exe extract -b localhost:9092 -o earliest -n 10
 ```
 
-Additionally you are allowed to override the configuration of the source-config as shown below:
+## CSV Conversion
 
-```
-./kafker.exe extract -cfg:source-config -n:10
-```
+Snapshots could be converted to CSV files for analysis. Kafker will try to parse events to JSON and merge them to the same table, so that the table will aquire field from all events. It uses [Json.NET](https://www.newtonsoft.com/json), [JsonFlatten](https://github.com/GFoley83/JsonFlatten) and [CsvHelper](https://joshclose.github.io/CsvHelper/).
 
-Note: You can either override all or as many as you want arguments. 
+If the mapping is specified in the topic confgiuration, Kafker will narrow down the number of fields and use names from the mapping.
 
-2. ###### Extract event without additional config file.
+## Usage Scenario
 
-You can directly specify the configuration
 
-```bash
-./kafker.exe extract -b:source-brokers -t:source-topic -n:number-of-events -o:offset
-```
-
-Note: When you specify the configuration straight from the console keep in mind that the topic source is mandatory and should be specified, the rest of the arguments are optional. If omitted their default value will be used.
-
-This command will read the config file, read certain number of events (press Ctrl+C to break the operation earlier if you need). When it's finished in the destination folder (defined in the `appsetting.json`) you'll find a DAT file. The name of the file will have configuration's name and timestamp in its name (e.g., `source-topic_20200825_054112.dat`).
-
-### Convert snapshot to CSV
-
-You need to specify the configuration and .DAT file from which you want to create a CSV file. The configuration is required to specify the mapping.
-
-```bash
-./kafker.exe convert -t source-topic source-topic_20200825_054112.dat
-```
-
-You can omit the argument `-t` to convert the snapshot as if there is no mapping specified. 
-
-### Emit snapshot to a Kafka topic
-
-The emit command will emit events to the topic specified in the configuration file. If you need to emit to another topic, you may want to create another configuration file.
-
-```bash
-./kafker.exe emit -t destination-topic source-topic_20200825_054112.dat
-```
-
-## Notes
-
-* Kafker lookup for files using the following order:
-    * in the current folder
-    * in the folder specified in the tool's configuration
-    * using absolute path
-* Produced CSV files are stored near source .DAT files  
 
 That's it.
-
