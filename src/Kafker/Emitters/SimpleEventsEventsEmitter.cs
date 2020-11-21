@@ -3,10 +3,11 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Kafker.Configurations;
+using Kafker.Helpers;
 using Kafker.Kafka;
 using McMaster.Extensions.CommandLineUtils;
 
-namespace Kafker.Helpers
+namespace Kafker.Emitters
 {
     public class SimpleEventsEventsEmitter : IEventsEmitter
     {

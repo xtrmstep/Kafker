@@ -8,11 +8,11 @@ using Kafker.Configurations;
 using Kafker.Kafka;
 using McMaster.Extensions.CommandLineUtils;
 
-namespace Kafker.Helpers
+namespace Kafker.Emitters
 {
     public class EventsEmitterPreserveTime : SimpleEventsEventsEmitter
     {
-        static volatile bool startEvent = false;
+        static volatile bool _startEvent = false;
         private readonly IConsole _console;
         private static IProducerFactory _producerFactory;
         private readonly KafkerSettings _settings;
@@ -35,12 +35,12 @@ namespace Kafker.Helpers
                 var mappedEventsWithTimeStamp = await MapEventsWithTimeStamp(fileName);
                 var tasks = mappedEventsWithTimeStamp.Select(x => ScheduleEventsSending(x.Key, x.Value, topicProducer, cancellationToken)).ToArray();
 
-                startEvent = true;
-                Task.WaitAll(tasks);
+                _startEvent = true;
+                Task.WaitAll(tasks, cancellationToken);
             }
             catch (Exception e)
             {
-                Console.WriteLine(e);
+                await _console.Error.WriteLineAsync(e.Message);
                 throw;
             }
             finally
@@ -89,7 +89,7 @@ namespace Kafker.Helpers
         {
             await Task.Yield();
 
-            while (!startEvent)
+            while (!_startEvent)
             {
                 await Task.Delay(1, cancellationToken);
                 if (cancellationToken.IsCancellationRequested) return;
@@ -98,14 +98,16 @@ namespace Kafker.Helpers
             await Task.Delay((int) key, cancellationToken);
             if (!cancellationToken.IsCancellationRequested)
             {
-                EmitEventsOnTime(value, producer);
+                EmitEventsOnTime(value, producer, cancellationToken);
             }
         }
 
-        private static void EmitEventsOnTime(List<string> list, RecordsProducer producer)
+        private static void EmitEventsOnTime(List<string> list, RecordsProducer producer, CancellationToken cancellationToken)
         {
             foreach (var item in list)
             {
+                if (cancellationToken.IsCancellationRequested) return;
+                
                 producer.ProduceAsync(item).GetAwaiter().GetResult();
                 _producedEvents++;
             }

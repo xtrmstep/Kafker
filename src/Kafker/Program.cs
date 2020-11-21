@@ -7,6 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Kafker.Commands;
 using Kafker.Configurations;
+using Kafker.Emitters;
 using Kafker.Helpers;
 using Kafker.Kafka;
 using McMaster.Extensions.CommandLineUtils;
