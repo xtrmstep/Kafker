@@ -40,11 +40,11 @@ namespace Kafker
             {
                 p.Description = "Extract a topic events to a snapshot (.DAT) file";
 
-                var configArg = p.Option("-cfg|--config <CONFIG>", "Configuration file", CommandOptionType.SingleOrNoValue);
+                var configArg = p.Option("-cfg|--config <CONFIG>", "Configuration file", CommandOptionType.SingleValue);
                 var brokers = p.Option("-b|--broker <BROKER>", "Broker", CommandOptionType.MultipleValue);
-                var topicName = p.Option("-t|--topic <TOPIC>", "Topic name from where the snapshot will be extracted", CommandOptionType.SingleOrNoValue);
-                var eventsToRead = p.Option("-n|--number <NUMBER>", "Number of events to read", CommandOptionType.SingleOrNoValue);
-                var offSetKind = p.Option("-o|--offset <OFFSET>", "Option to read Kafka topic from earliest or only new events", CommandOptionType.SingleOrNoValue);
+                var topicName = p.Option("-t|--topic <TOPIC>", "Topic name from where the snapshot will be extracted", CommandOptionType.SingleValue);
+                var eventsToRead = p.Option<uint>("-n|--number <NUMBER>", "Number of events to read", CommandOptionType.SingleValue);
+                var offSetKind = p.Option<OffsetKind>("-o|--offset <OFFSET>", "Option to read Kafka topic from earliest or only new events", CommandOptionType.SingleValue);
 
                 p.OnExecuteAsync(async cancellationToken =>
                 {
@@ -91,10 +91,10 @@ namespace Kafker
             {
                 p.Description = "Emit events from a given snapshot file (.DAT)";
 
-                var configArg = p.Option("-cfg|--config <CONFIG>", "Configuration file", CommandOptionType.SingleOrNoValue);
+                var configArg = p.Option("-cfg|--config <CONFIG>", "Configuration file", CommandOptionType.SingleValue);
                 var brokers = p.Option("-b|--broker <BROKER>", "Broker", CommandOptionType.MultipleValue);
-                var topicName = p.Option("-t|--topic <TOPIC>", "Topic name from where the snapshot will be extracted", CommandOptionType.SingleOrNoValue);
-                var preserveArg = p.Option("-p|--preserve <PRESERVE>", "Preserve the timestamp in the snapshot", CommandOptionType.SingleOrNoValue);
+                var topicName = p.Option("-t|--topic <TOPIC>", "Topic name from where the snapshot will be extracted", CommandOptionType.SingleValue);
+                var preserveArg = p.Option("-p|--preserve <PRESERVE>", "Preserve the timestamp in the snapshot", CommandOptionType.NoValue);
                 var fileName = p.Argument("file", "Relative or absolute path to a DAT file with topic snapshot").IsRequired();
 
                 p.OnExecuteAsync(async cancellationToken =>
@@ -116,7 +116,7 @@ namespace Kafker
                 p.Description = "Convert JSON snapshot to a CSV file";
 
                 var fileName = p.Argument("file", "Relative or absolute path to a DAT file with topic snapshot").IsRequired();
-                var topicArg = p.Option("-cfg|--config <CONFIG>", "Configuration file", CommandOptionType.SingleOrNoValue);
+                var topicArg = p.Option("-cfg|--config <CONFIG>", "Configuration file", CommandOptionType.SingleValue);
 
                 p.OnExecuteAsync(async cancellationToken =>
                 {
@@ -148,10 +148,10 @@ namespace Kafker
         }
 
         private static async Task<KafkaTopicConfiguration> InitKafkaTopicConfiguration(KafkerSettings kafkerSettings, CommandOption configName,
-            CommandOption brokers = null, CommandOption topicName = null, CommandOption eventsToRead = null, CommandOption offSetKind = null)
+            CommandOption brokers = null, CommandOption topicName = null, CommandOption<uint> eventsToRead = null, CommandOption<OffsetKind> offSetKind = null)
         {
-            var events = eventsToRead != null && eventsToRead.HasValue() ? uint.Parse(eventsToRead.Value()) : (uint?) null;
-            OffsetKind? offset = offSetKind != null && offSetKind.HasValue() ? (OffsetKind?) Enum.Parse(typeof(OffsetKind), offSetKind.Value(), true) : null;
+            var events = eventsToRead != null && eventsToRead.HasValue() ? eventsToRead.ParsedValue : (uint?) null;
+            var offset = offSetKind != null && offSetKind.HasValue() ? offSetKind.ParsedValue : (OffsetKind?)null;
 
             var readConfigurationAsync = await ExtractorHelper.GetConfiguration(kafkerSettings,
                 configName.Value(),
