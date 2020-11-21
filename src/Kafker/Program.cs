@@ -154,7 +154,7 @@ namespace Kafker
             var events = eventsToExtract != null && eventsToExtract.HasValue() ? eventsToExtract.ParsedValue : (uint?) null;
             var offset = offSetKind != null && offSetKind.HasValue() ? offSetKind.ParsedValue : (OffsetKind?)null;
 
-            var readConfigurationAsync = await ExtractorHelper.GetConfiguration(kafkerSettings,
+            var readConfigurationAsync = await ExtractorHelper.CreateTopicConfiguration(kafkerSettings,
                 configName.Value(),
                 brokers.Value(),
                 topicName.Value(),

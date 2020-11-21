@@ -13,7 +13,18 @@ namespace Kafker.Helpers
 {
     public static class ExtractorHelper
     {
-        public static async Task<KafkaTopicConfiguration> ReadConfigurationAsync(string configName, KafkerSettings setting, IConsole console)
+        public static string GetAbsoluteFilePath(string fileName, string kafkerSnapshotsFolder)
+        {
+            var snapshotFilePath = fileName;
+            if (File.Exists(snapshotFilePath)) return snapshotFilePath;
+            
+            snapshotFilePath = Path.Combine(kafkerSnapshotsFolder, fileName);
+            return File.Exists(snapshotFilePath) 
+                ? snapshotFilePath 
+                : null;
+        }
+        
+        public static async Task<KafkaTopicConfiguration> ReadTopicConfigurationAsync(string configName, KafkerSettings setting, IConsole console)
         {
             var path = Path.Combine(setting.ConfigurationFolder, $"{configName}.cfg");
             if (!File.Exists(path))
@@ -22,19 +33,18 @@ namespace Kafker.Helpers
                 throw new ApplicationException($"Cannot load configuration for topic '{configName}'");
             }
 
-
             var text = await File.ReadAllTextAsync(path);
             var topicConfiguration = JsonConvert.DeserializeObject<KafkaTopicConfiguration>(text);
 
             return topicConfiguration;
         }
 
-        public static async Task<KafkaTopicConfiguration> GetConfiguration(KafkerSettings settings,
+        public static async Task<KafkaTopicConfiguration> CreateTopicConfiguration(KafkerSettings settings,
             string configName, string brokers, string topic, uint? eventToRead, OffsetKind? offset)
         {
             
             var conf = !string.IsNullOrWhiteSpace(configName) 
-                ? await ReadConfigurationAsync(configName, settings, PhysicalConsole.Singleton)
+                ? await ReadTopicConfigurationAsync(configName, settings, PhysicalConsole.Singleton)
                 : new KafkaTopicConfiguration
                 {
                     Brokers = settings.Brokers,
