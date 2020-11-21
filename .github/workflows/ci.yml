@@ -1,5 +1,10 @@
 name: Windows CLI
 
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
 
 jobs:
   build:
@@ -19,11 +24,4 @@ jobs:
     - name: Install dependencies
       run: dotnet restore ./src/Kafker/Kafker.csproj
     - name: Build
-      run: dotnet build ./src/Kafker/Kafker.csproj -c Release --no-restore -o ./out
-    #- name: Create archive
-    #  run: Compress-Archive -Path ./out/* -DestinationPath ./release.zip
-    - name: Upload a Build Artifact
-      uses: actions/upload-artifact@v2.2.1
-      with:
-        name: kafker-win-x64.zip
-        path: ./out
+      run: dotnet build ./src/Kafker/Kafker.csproj -c Release --no-restore

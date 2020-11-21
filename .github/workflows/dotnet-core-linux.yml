@@ -1,14 +1,9 @@
-name: Windows CLI
-
+name: Linux CLI
 
 jobs:
   build:
-    
-    strategy:
-      matrix:
-        targetplatform: [x64]
 
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v2
@@ -20,10 +15,8 @@ jobs:
       run: dotnet restore ./src/Kafker/Kafker.csproj
     - name: Build
       run: dotnet build ./src/Kafker/Kafker.csproj -c Release --no-restore -o ./out
-    #- name: Create archive
-    #  run: Compress-Archive -Path ./out/* -DestinationPath ./release.zip
     - name: Upload a Build Artifact
       uses: actions/upload-artifact@v2.2.1
       with:
-        name: kafker-win-x64.zip
+        name: kafker-ubuntu.zip
         path: ./out
