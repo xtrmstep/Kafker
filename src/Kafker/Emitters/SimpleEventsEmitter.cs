@@ -66,7 +66,7 @@ namespace Kafker.Emitters
                 if (cancellationToken.IsCancellationRequested) break;
 
                 var pair = line.Split("|");
-                var jsonText = pair[1].Substring(1, pair[1].Length - 2);
+                var jsonText = pair[1];
                 await topicProducer.ProduceAsync(jsonText);
                 ProducedEvents++;
 
