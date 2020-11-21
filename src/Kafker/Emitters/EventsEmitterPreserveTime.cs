@@ -48,7 +48,7 @@ namespace Kafker.Helpers
                 await _console.Out.WriteLineAsync($"\r\nProduced {_producedEvents} events");
             }
 
-            return await Task.FromResult(0).ConfigureAwait(false); // ok
+            return await Task.FromResult(Constants.RESULT_CODE_OK).ConfigureAwait(false); // ok
         }
 
         private async Task<List<Tuple<long, string>>> LoadAndSplitSnapshotData(string fileName)

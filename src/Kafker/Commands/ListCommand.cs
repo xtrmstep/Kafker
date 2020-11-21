@@ -37,7 +37,7 @@ namespace Kafker.Commands
                 await _console.Out.WriteLineAsync("- empty- ");
             }
 
-            return await Task.FromResult(0).ConfigureAwait(false);
+            return await Task.FromResult(Constants.RESULT_CODE_OK).ConfigureAwait(false);
         }
 
         // private async Task CreateMapTemplateAsync(string templateName)

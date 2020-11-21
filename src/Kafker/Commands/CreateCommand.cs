@@ -23,7 +23,7 @@ namespace Kafker.Commands
             templateName ??= "template";
             await CreateCfgMapTemplateAsync(templateName);
 
-            return await Task.FromResult(0).ConfigureAwait(false);
+            return await Task.FromResult(Constants.RESULT_CODE_OK).ConfigureAwait(false);
         }
 
         private async Task CreateCfgMapTemplateAsync(string templateName)

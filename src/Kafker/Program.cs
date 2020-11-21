@@ -19,9 +19,6 @@ namespace Kafker
 {
     public class Program
     {
-        private const int RESULT_CODE_OK = 0;
-        private const int RESULT_CODE_ERROR = 1;
-
         public static async Task<int> Main(string[] args)
         {
             var environment = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT");
@@ -62,7 +59,7 @@ namespace Kafker
                     {
                         await PhysicalConsole.Singleton.Out.WriteLineAsync($"An error has occurred: {err.Message}");
                         app.ShowHelp();
-                        return RESULT_CODE_ERROR;
+                        return Constants.RESULT_CODE_ERROR;
                     }
                 });
             });
@@ -134,7 +131,7 @@ namespace Kafker
             {
                 await PhysicalConsole.Singleton.Error.WriteLineAsync("Specify a command");
                 app.ShowHelp();
-                return await Task.FromResult(RESULT_CODE_OK).ConfigureAwait(false);
+                return await Task.FromResult(Constants.RESULT_CODE_OK).ConfigureAwait(false);
             });
 
             try
@@ -147,7 +144,7 @@ namespace Kafker
                 app.ShowHelp();
             }
 
-            return RESULT_CODE_OK;
+            return Constants.RESULT_CODE_OK;
         }
 
         private static async Task<KafkaTopicConfiguration> InitKafkaTopicConfiguration(KafkerSettings kafkerSettings, CommandOption configName,

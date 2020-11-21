@@ -51,7 +51,7 @@ namespace Kafker.Commands
                 await _console.Out.WriteLineAsync($"\r\n");
             }
 
-            return await Task.FromResult(0).ConfigureAwait(false); // ok
+            return await Task.FromResult(Constants.RESULT_CODE_OK).ConfigureAwait(false); // ok
         }
     }
 }

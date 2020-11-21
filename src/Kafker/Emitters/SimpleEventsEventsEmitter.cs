@@ -49,7 +49,7 @@ namespace Kafker.Helpers
                 await _console.Out.WriteLineAsync($"\r\nProduced {producedEvents} events");
             }
             
-            return await Task.FromResult(0).ConfigureAwait(false); // ok
+            return await Task.FromResult(Constants.RESULT_CODE_OK).ConfigureAwait(false); // ok
         }
     }
 }

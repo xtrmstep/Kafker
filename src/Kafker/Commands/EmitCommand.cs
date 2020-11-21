@@ -28,15 +28,13 @@ namespace Kafker.Commands
             try
             {
                 await _eventsEmitter.EmitEvents(cancellationToken, kafkaTopicConfiguration, fileName);
-
+                return await Task.FromResult(Constants.RESULT_CODE_OK).ConfigureAwait(false);
             }
             catch (Exception err)
             {
                 await _console.Error.WriteLineAsync($"\r\nError: {err.Message}");
-                return await Task.FromResult(1).ConfigureAwait(false); // error
+                return await Task.FromResult(Constants.RESULT_CODE_ERROR).ConfigureAwait(false);
             }
-            
-            return await Task.FromResult(0).ConfigureAwait(false); // ok
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -29,12 +30,12 @@ namespace Kafker.Commands
 
         public async Task<int> InvokeAsync(CancellationToken cancellationToken, KafkaTopicConfiguration configuration)
         {
-            
             var destinationCsvFile = GetDestinationCsvFilename(_settings.ConfigurationFolder, _settings, _fileTagProvider);
             var totalNumberOfConsumedEvents = 0;
             using var topicConsumer = _consumerFactory.Create(configuration);
             await using var fileStream = new FileStream(destinationCsvFile.FullName, FileMode.Append, FileAccess.Write);
             await using var streamWriter = new StreamWriter(fileStream);
+            
             try
             {
                 var numberOfReadEvents = 0;
@@ -65,14 +66,17 @@ namespace Kafker.Commands
                     if (totalEventsToRead > 0 && numberOfReadEvents >= totalEventsToRead)
                         break;
                 }
+                return await Task.FromResult(Constants.RESULT_CODE_OK).ConfigureAwait(false);
             }
-
+            catch (Exception err)
+            {
+                await _console.Error.WriteLineAsync($"\n\rError: {err.Message}");
+                return await Task.FromResult(Constants.RESULT_CODE_ERROR).ConfigureAwait(false);
+            }
             finally
             {
                 await _console.Out.WriteLineAsync($"\n\rConsumed {totalNumberOfConsumedEvents} events");
             }
-
-            return await Task.FromResult(0).ConfigureAwait(false); // ok
         }
 
         internal static FileInfo GetDestinationCsvFilename(string topic, KafkerSettings setting,
