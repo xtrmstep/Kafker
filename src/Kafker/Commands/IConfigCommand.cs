@@ -5,6 +5,8 @@ namespace Kafker.Commands
 {
     public interface IConfigCommand
     {
-        Task<int> InvokeAsync();
+        Task<int> ShowConfigurationAsync();
+        Task<int> SetConfigurationFolderAsync(string value);
+        Task<int> SetDestinationFolderAsync(string value);
     }
 }

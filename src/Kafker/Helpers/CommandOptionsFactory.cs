@@ -48,6 +48,16 @@ namespace Kafker.Helpers
         {
             return p.Argument("file", "Snapshot file name (.DAT)").IsRequired();
         }
+        
+        public static CommandOption SetDestinationPathOption(CommandLineApplication p)
+        {
+            return p.Option("--set-destination-path <DESTINATION_PATH>", "Set the folder path where snapshots will be stored", CommandOptionType.SingleValue);
+        }
+        
+        public static CommandOption SetConfigStorePathOption(CommandLineApplication p)
+        {
+            return p.Option("--set-config-path <CONFIG_PATH>", "Set the folder path where configurations will be stored", CommandOptionType.SingleValue);
+        }
 
         public class OffsetKindValidator : IOptionValidator
         {

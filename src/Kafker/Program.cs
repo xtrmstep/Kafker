@@ -139,11 +139,23 @@ namespace Kafker
             
             app.Command("cfg", p =>
             {
+                var destOption = CommandOptionsFactory.SetDestinationPathOption(p);
+                var configOption = CommandOptionsFactory.SetConfigStorePathOption(p);
+                
                 p.Description = "Show default configuration";
                 p.OnExecuteAsync(async cancellationToken =>
                 {
                     var configCommand = services.GetService<IConfigCommand>();
-                    return await configCommand.InvokeAsync();
+                    Task commandExecution;
+                    if (destOption.HasValue())
+                        commandExecution = configCommand.SetDestinationFolderAsync(destOption.Value());
+                    else if (configOption.HasValue())
+                        commandExecution = configCommand.SetConfigurationFolderAsync(configOption.Value());
+                    else
+                        commandExecution = configCommand.ShowConfigurationAsync();
+
+                    await commandExecution;
+                    return await Task.FromResult(Constants.RESULT_CODE_OK).ConfigureAwait(false);
                 });
             });
 
