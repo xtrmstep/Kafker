@@ -136,6 +136,16 @@ namespace Kafker
                     return await convertCommand.InvokeAsync(cancellationToken, fileName.Value, topicConfiguration);
                 });
             });
+            
+            app.Command("cfg", p =>
+            {
+                p.Description = "Show default configuration";
+                p.OnExecuteAsync(async cancellationToken =>
+                {
+                    var configCommand = services.GetService<IConfigCommand>();
+                    return await configCommand.InvokeAsync();
+                });
+            });
 
             app.OnExecuteAsync(async cancellationToken =>
             {
@@ -185,6 +195,7 @@ namespace Kafker
                 .AddSingleton<IConvertCommand, ConvertCommand>()
                 .AddSingleton<IListCommand, ListCommand>()
                 .AddSingleton<IEmitCommand, EmitCommand>()
+                .AddSingleton<IConfigCommand, ConfigCommand>()
                 .AddSingleton(PhysicalConsole.Singleton)
                 .AddSingleton(kafkerSettings);
 
